@@ -15,12 +15,15 @@ start = "python chaos_loop.py"
 
 # Utility: Clean up cache/memory if things get weird
 clean = "rm -rf adapters/*.safetensors"
+clean-victim = "rm -rf victim_adapters/*.safetensors"
+clean-all = "rm -rf adapters/*.safetensors victim_adapters/*.safetensors"
 
 [dependencies]
 python = "3.11.*"
-huggingface_hub = "*"
+huggingface_hub = "<1.0"
 protobuf = "*"
 
 [pypi-dependencies]
 # MLX-LM is the critical dependency for M1 inference/training
-mlx-lm = ">=0.19.0"
+mlx-lm = ">=0.19.0,<0.30.0"
+transformers = "<5.0"
