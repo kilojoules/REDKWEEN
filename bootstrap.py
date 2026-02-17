@@ -7,6 +7,7 @@ from mlx_lm import load
 from mlx_lm.tuner.utils import linear_to_lora_layers
 import numpy as np
 import os
+import config
 
 # --- Configuration ---
 MODEL_PATH = "mlx-community/Llama-3.2-1B-Instruct-4bit"
@@ -23,14 +24,12 @@ def main():
     # 1. Prepare Model for LoRA
     model.freeze()
     
-    print("   (Debug) First layer modules:", list(model.layers[0].children().keys()))
-
     # FIX: Added 'scale' and 'keys' explicitly
     adapter_config = {
         "keys": ["q_proj", "v_proj"], 
         "rank": 8, 
         "alpha": 16,
-        "scale": 2.0, # 16/8 = 2.0. Required by your version of MLX.
+        "scale": config.LORA_SCALE,
         "dropout": 0.0
     }
     
