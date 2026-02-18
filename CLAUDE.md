@@ -36,6 +36,7 @@ All loaded one at a time to fit in VRAM. `unload_model()` calls `torch.cuda.empt
 ```
 model_utils.py      # All HF/PEFT/BnB model operations — edit this for GPU issues
 config.py           # Model IDs, hyperparams, target intent
+baselines.py        # Baseline ASR evaluation across victim sizes (1B, 3B, 8B) — run BEFORE chaos loop
 chaos_loop.py       # Main 5-phase loop (generate → evaluate → judge → train adv → train victim)
 bootstrap.py        # Initial adversary LoRA training on seed data
 gauntlet.py         # Cross-round evaluation matrix
@@ -49,11 +50,13 @@ data/train.jsonl    # Accumulated training data (JSONL, {"messages": [...]})
 
 ```bash
 pixi install
-pixi run clean-all      # Remove old MLX adapter files first!
-pixi run bootstrap       # Train initial adversary LoRA (~5 min)
-pixi run start           # Run 10-round chaos loop
-pixi run plot            # Generate figures
-pixi run gauntlet --matrix  # Cross-round evaluation
+pixi run clean-all           # Remove old MLX adapter files first!
+pixi run baselines           # Baseline ASR across victim sizes (~20 min) — run first!
+pixi run baselines -n 10     # Faster with fewer attacks
+pixi run bootstrap           # Train initial adversary LoRA (~5 min)
+pixi run start               # Run 10-round chaos loop
+pixi run plot                # Generate figures
+pixi run gauntlet --matrix   # Cross-round evaluation
 ```
 
 ## Important conventions

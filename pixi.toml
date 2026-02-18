@@ -16,7 +16,8 @@ start = "python chaos_loop.py"
 # Utility: Clean up cache/memory if things get weird
 clean = "rm -rf adapters/"
 clean-victim = "rm -rf victim_adapters/"
-clean-all = "rm -rf adapters/ victim_adapters/"
+clean-all = "rm -rf adapters/ victim_adapters/ checkpoints/"
+baselines = "python baselines.py"
 gauntlet = "python gauntlet.py"
 plot = "python plot_metrics.py"
 
