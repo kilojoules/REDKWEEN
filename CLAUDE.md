@@ -26,7 +26,7 @@ All MLX-LM code was replaced with PyTorch + HuggingFace Transformers + PEFT + Bi
 | Role | Model ID | Size | Notes |
 |------|----------|------|-------|
 | Adversary | `meta-llama/Llama-3.2-1B-Instruct` | ~1B | LoRA-trained each round |
-| Victim | `meta-llama/Llama-3.1-8B-Instruct` | ~8B | LoRA-trained each round (upgraded from 3B on main) |
+| Victim | `Qwen/Qwen2.5-7B-Instruct` | ~7B | LoRA-trained each round (upgraded from 3B Llama on main) |
 | Judge | `meta-llama/Llama-Guard-3-1B` | ~1B | Frozen, no adapters |
 
 All loaded one at a time to fit in VRAM. `unload_model()` calls `torch.cuda.empty_cache()` between phases.
