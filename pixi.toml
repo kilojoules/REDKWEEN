@@ -23,10 +23,9 @@ plot = "python plot_metrics.py"
 
 [dependencies]
 python = "3.11.*"
-pytorch-cuda = "12.4.*"
 
 [pypi-dependencies]
-torch = ">=2.2"
+torch = {version = ">=2.2", extras = ["cu124"]}
 transformers = ">=4.40"
 peft = ">=0.10"
 bitsandbytes = ">=0.43"
