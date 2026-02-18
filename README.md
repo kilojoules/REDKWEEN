@@ -1,5 +1,7 @@
 # Chaos-1B: Automated Red Teaming via Asynchronous RFT
 
+[**Documentation**](https://kilojoules.github.io/red-team-experiments/)
+
 An automated red-teaming pipeline that trains a 1B-parameter LLM adversary to jailbreak larger aligned models through iterative self-play. A frozen judge (Llama Guard) scores each attempt. Successful attacks train the adversary to improve; the victim gets hardened on the same attacks.
 
 ## Branches
