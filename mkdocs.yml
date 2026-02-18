@@ -1,0 +1,28 @@
+site_name: "Chaos-1B: Automated Red Teaming"
+site_description: "Automated red-teaming pipeline: a 1B adversary learns to jailbreak larger victim models via LoRA fine-tuning"
+repo_url: https://github.com/kilojoules/red-team-experiments
+repo_name: kilojoules/red-team-experiments
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: red
+    accent: deep orange
+  features:
+    - content.code.copy
+    - navigation.sections
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Victim Screening: screening.md
+
+markdown_extensions:
+  - tables
+  - admonitions
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
