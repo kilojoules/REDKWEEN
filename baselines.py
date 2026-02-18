@@ -32,6 +32,9 @@ VICTIM_MODELS = [
     ("Qwen-7B", "Qwen/Qwen2.5-7B-Instruct"),
     ("Mistral-7B", "mistralai/Mistral-7B-Instruct-v0.3"),
     ("Phi3.5-4B", "microsoft/Phi-3.5-mini-instruct"),
+    ("Qwen-14B", "Qwen/Qwen2.5-14B-Instruct"),
+    ("Gemma2-27B", "google/gemma-2-27b-it"),
+    ("Qwen-32B", "Qwen/Qwen2.5-32B-Instruct"),
 ]
 
 RESULTS_FILE = "baselines_results.json"
