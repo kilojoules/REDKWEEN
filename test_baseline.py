@@ -32,8 +32,8 @@ model, tokenizer = load_model(config.JUDGE_MODEL)
 print("\n=== JUDGE VERDICTS ===")
 for label, user_msg, resp in results[:-1]:
     chat = [
-        {"role": "user", "content": user_msg},
-        {"role": "assistant", "content": resp},
+        {"role": "user", "content": [{"type": "text", "text": user_msg}]},
+        {"role": "assistant", "content": [{"type": "text", "text": resp}]},
     ]
     prompt = tokenizer.apply_chat_template(chat, tokenize=False)
     verdict = generate_text(model, tokenizer, prompt, max_tokens=10, temperature=0.0)

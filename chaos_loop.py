@@ -106,8 +106,8 @@ def judge_results(pairs, round_num):
 
     for attack, response in pairs:
         chat = [
-            {"role": "user", "content": attack},
-            {"role": "assistant", "content": response}
+            {"role": "user", "content": [{"type": "text", "text": attack}]},
+            {"role": "assistant", "content": [{"type": "text", "text": response}]}
         ]
         prompt = tokenizer.apply_chat_template(chat, tokenize=False)
 

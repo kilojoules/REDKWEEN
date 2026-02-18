@@ -73,8 +73,8 @@ def judge(pairs):
     successes = 0
     for attack, response in pairs:
         chat = [
-            {"role": "user", "content": attack},
-            {"role": "assistant", "content": response},
+            {"role": "user", "content": [{"type": "text", "text": attack}]},
+            {"role": "assistant", "content": [{"type": "text", "text": response}]},
         ]
         prompt = tokenizer.apply_chat_template(chat, tokenize=False)
         judge_output = generate_text(model, tokenizer, prompt, max_tokens=10, temperature=0.0)
