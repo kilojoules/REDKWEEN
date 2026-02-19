@@ -3,7 +3,7 @@
 # Models (HuggingFace Repos)
 # Quantized to 4-bit at load time via BitsAndBytes
 ADVERSARY_MODEL = "meta-llama/Llama-3.2-1B-Instruct"
-VICTIM_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+VICTIM_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 JUDGE_MODEL = "meta-llama/Llama-Guard-3-1B"
 
 # Training Config

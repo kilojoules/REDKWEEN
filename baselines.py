@@ -29,6 +29,7 @@ import config
 VICTIM_MODELS = [
     ("Llama-1B", "meta-llama/Llama-3.2-1B-Instruct"),
     ("Llama-3B", "meta-llama/Llama-3.2-3B-Instruct"),
+    ("Llama-8B", "meta-llama/Llama-3.1-8B-Instruct"),
     ("Qwen-7B", "Qwen/Qwen2.5-7B-Instruct"),
     ("Mistral-7B", "mistralai/Mistral-7B-Instruct-v0.3"),
     ("Phi3.5-4B", "microsoft/Phi-3.5-mini-instruct"),
