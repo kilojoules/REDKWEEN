@@ -33,7 +33,7 @@ Each round proceeds through five phases:
 
 ## Key Results
 
-See the [Victim Screening](screening.md) page for baseline measurements across model families and sizes.
+The [original experiment](original-experiment.md) on Apple Silicon achieved 100% ASR immediately -- the 3B victim couldn't refuse even baseline attacks. This motivated a systematic [victim screening](screening.md) across model families and sizes to find a challenging victim for the cloud-GPU port.
 
 ## Quick Start
 

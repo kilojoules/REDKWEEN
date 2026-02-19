@@ -16,6 +16,7 @@ theme:
 nav:
   - Home: index.md
   - Architecture: architecture.md
+  - Original Experiment: original-experiment.md
   - Victim Screening: screening.md
 
 markdown_extensions:
