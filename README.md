@@ -38,6 +38,8 @@ Every adversary checkpoint vs every victim checkpoint (10 attacks per match). Th
 
 ![Gauntlet heatmap](docs/gauntlet_heatmap.png)
 
+**Key finding: victim hardening causes catastrophic forgetting.** The base victim (no hardening) is one of the strongest defenders, while the most-hardened victim (v9) is the weakest. LoRA fine-tuning on specific (attack, refusal) pairs patches targeted vulnerabilities but degrades the model's broader safety alignment. See the [full analysis](https://kilojoules.github.io/red-team-experiments/results/#victim-hardening-causes-catastrophic-forgetting).
+
 ### Victim Screening
 
 We [screened six models](https://kilojoules.github.io/red-team-experiments/screening/) across four families. Non-Llama models at 4B+ exhibited a "disclaimer-then-comply" failure mode. The Llama family maintained hard refusals.
