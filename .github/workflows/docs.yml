@@ -1,11 +1,13 @@
 name: Deploy Docs
 
 on:
+  workflow_dispatch:
   push:
     branches: [cloud-gpu, main]
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
 
 permissions:
   contents: read
