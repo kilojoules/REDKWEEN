@@ -58,7 +58,7 @@ Round 0 is much slower (1620s) due to initial model downloads. The only 0% ASR r
 
 We ran a full 10x10 gauntlet, pairing every adversary checkpoint (round *i*) against every victim checkpoint (round *j*) with 10 attacks per match.
 
-![Gauntlet heatmap](../gauntlet_heatmap.png)
+![Gauntlet heatmap](gauntlet_heatmap.png)
 
 The matrix is overwhelmingly 0% (dark green), with scattered 10-20% hits. Key observations:
 
