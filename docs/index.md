@@ -35,10 +35,10 @@ Each round proceeds through five phases:
 
 The [original experiment](original-experiment.md) on Apple Silicon achieved 100% ASR immediately -- the 3B victim couldn't refuse even baseline attacks. This motivated a systematic [victim screening](screening.md) across model families and sizes to find a challenging victim.
 
-With Llama-3.1-8B-Instruct as the victim, the [chaos loop](results.md) produced genuine adversarial co-evolution: ASR dropped from 20% to 0% after victim hardening, then oscillated as the adversary adapted around defenses. Over 10 rounds, neither side achieved a permanent advantage.
+With Llama-3.1-8B-Instruct as the victim, the [chaos loop](results.md) produced genuine adversarial co-evolution: ASR dropped from 30% to single digits after victim hardening, while the adversary persistently found new attack vectors. A [10x10 gauntlet](results.md#gauntlet-cross-round-evaluation) confirmed robust defenses across all checkpoint pairings.
 
 ```
-ASR:  20% → 0% → 3% → 13% → 3% → 3% → 0% → 7% → 7% → 0%
+ASR:  30% → 7% → 3% → 7% → 7% → 3% → 0% → 7% → 7% → 3%
 ```
 
 ## Quick Start
