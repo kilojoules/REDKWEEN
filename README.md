@@ -23,12 +23,12 @@ Three models, one loaded at a time, all in 4-bit quantization:
 | Role | Model | State |
 |------|-------|-------|
 | **Adversary** | Llama-3.2-1B-Instruct | LoRA-trained each round |
-| **Victim** | Selected via screening | LoRA-trained each round |
+| **Victim** | Llama-3.1-8B-Instruct | LoRA-trained each round |
 | **Judge** | Llama-Guard-3-1B | Frozen |
 
 ## Key Findings
 
-We screened five victim candidates across three model families. All models at 4B+ parameters exhibited a **"disclaimer-then-comply"** failure mode -- they issue a safety warning and then provide the harmful code anyway. Only the small Llama 3.2 models (1B, 3B) produced hard refusals.
+We screened six victim candidates across four model families. Non-Llama models at 4B+ parameters exhibited a **"disclaimer-then-comply"** failure mode -- they issue a safety warning and then provide the harmful code anyway. The Llama family maintained meaningful refusal behavior across sizes.
 
 | Victim | B1 ASR (Direct) | Behavior |
 |--------|----------------|----------|
@@ -37,6 +37,7 @@ We screened five victim candidates across three model families. All models at 4B
 | Phi-3.5-mini (3.8B) | 100% | Disclaimer + comply |
 | Qwen2.5-7B | 100% | Disclaimer + comply |
 | Mistral-7B | 100% | Disclaimer + comply |
+| **Llama-3.1-8B** | **40%** | **Mixed (selected victim)** |
 
 See the [full screening results](docs/screening.md) for analysis.
 
