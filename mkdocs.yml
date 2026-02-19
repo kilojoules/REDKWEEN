@@ -18,6 +18,7 @@ nav:
   - Architecture: architecture.md
   - Original Experiment: original-experiment.md
   - Victim Screening: screening.md
+  - Chaos Loop Results: results.md
 
 markdown_extensions:
   - tables

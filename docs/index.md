@@ -16,7 +16,7 @@ Three models operate in an asynchronous loop (one loaded at a time to fit in GPU
 | Role | Model | Size | State |
 |------|-------|------|-------|
 | **Adversary** | Llama-3.2-1B-Instruct | 1B | LoRA-trained each round |
-| **Victim** | *(selected via screening)* | 7B+ | LoRA-trained each round |
+| **Victim** | Llama-3.1-8B-Instruct | 8B | LoRA-trained each round |
 | **Judge** | Llama-Guard-3-1B | 1B | Frozen |
 
 All models are loaded in 4-bit quantization (NF4, bfloat16 compute) via BitsAndBytes.
@@ -33,7 +33,13 @@ Each round proceeds through five phases:
 
 ## Key Results
 
-The [original experiment](original-experiment.md) on Apple Silicon achieved 100% ASR immediately -- the 3B victim couldn't refuse even baseline attacks. This motivated a systematic [victim screening](screening.md) across model families and sizes to find a challenging victim for the cloud-GPU port.
+The [original experiment](original-experiment.md) on Apple Silicon achieved 100% ASR immediately -- the 3B victim couldn't refuse even baseline attacks. This motivated a systematic [victim screening](screening.md) across model families and sizes to find a challenging victim.
+
+With Llama-3.1-8B-Instruct as the victim, the [chaos loop](results.md) produced genuine adversarial co-evolution: ASR dropped from 20% to 0% after victim hardening, then oscillated as the adversary adapted around defenses. Over 10 rounds, neither side achieved a permanent advantage.
+
+```
+ASR:  20% → 0% → 3% → 13% → 3% → 3% → 0% → 7% → 7% → 0%
+```
 
 ## Quick Start
 
