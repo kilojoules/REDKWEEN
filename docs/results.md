@@ -60,15 +60,32 @@ We ran a full 10x10 gauntlet, pairing every adversary checkpoint (round *i*) aga
 
 ![Gauntlet heatmap](gauntlet_heatmap.png)
 
-The matrix is overwhelmingly 0% (dark green), with scattered 10-20% hits. Key observations:
+The matrix is overwhelmingly 0% (dark green), with scattered 10-20% hits -- a dramatic contrast with the [original experiment](original-experiment.md), where every cell was 100%.
 
-- **Row 0 (early adversary) is the strongest attacker** -- it still finds occasional wins against later victims, likely because its attack distribution is broader before RFT narrows it
-- **Row 9 (final adversary) scores 0% across the board** -- it has been trained on so many specific patterns that it's lost diversity
-- **Column 0 (base victim) is the weakest defender** -- but even it only gives up 10% to the strongest adversary
-- **No adversary achieves more than 20% against any victim** -- the victim hardening is robust across checkpoints
-- **The diagonal (same-round matchups) averages ~3%** -- the online training keeps both sides roughly matched
+### Adversary diversity decays
 
-This is a dramatic contrast with the [original experiment](original-experiment.md), where every cell in the 10x10 matrix was 100%.
+- **Row 0 (early adversary) is the strongest attacker** -- it finds occasional wins against *every* victim version, because its attack distribution is broad before RFT narrows it
+- **Row 9 (final adversary) scores 0% across the board** -- RFT has trained it on so many specific patterns that it's lost diversity and can no longer explore novel vectors
+
+### Victim hardening causes catastrophic forgetting
+
+The column totals (sum of ASR across all adversaries) reveal a counterintuitive pattern:
+
+| Victim | v0 | v1 | v2 | v3 | v4 | v5 | v6 | v7 | v8 | v9 |
+|--------|----|----|----|----|----|----|----|----|----|----|
+| **Total ASR** | 10 | 30 | 30 | 0 | 30 | 40 | 40 | 20 | 20 | **50** |
+
+The base victim (v0, no hardening) is one of the *strongest* defenders, while the most-hardened victim (v9) is the *weakest*. This suggests that LoRA fine-tuning on specific (attack, refusal) pairs causes **catastrophic forgetting** -- the victim learns to refuse the exact attacks it was trained on, but its general safety alignment degrades in the process.
+
+This explains why the online ASR still trends downward during the chaos loop: the adversary and victim co-evolve against each other's *current* version, so the victim always learns to refuse the adversary's latest attacks. But the gauntlet reveals that this hardening is narrow -- it comes at the cost of robustness to *different* attack strategies from other rounds.
+
+### Implications
+
+This is an important finding for safety fine-tuning in general: **patching specific vulnerabilities with LoRA can weaken the model's broader safety alignment.** A more robust approach might involve:
+
+- Replay buffers that mix new refusal data with samples of the model's original safety training
+- Regularization to prevent the LoRA weights from drifting too far from the base model
+- Full fine-tuning instead of LoRA, allowing more capacity for both specific and general refusals
 
 ## Comparison with Original Experiment
 
