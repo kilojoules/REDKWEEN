@@ -35,11 +35,13 @@ Each round proceeds through five phases:
 
 The [original experiment](original-experiment.md) on Apple Silicon achieved 100% ASR immediately -- the 3B victim couldn't refuse even baseline attacks. This motivated a systematic [victim screening](screening.md) across model families and sizes to find a challenging victim.
 
-With Llama-3.1-8B-Instruct as the victim, the [chaos loop](results.md) produced genuine adversarial co-evolution: ASR dropped from 30% to single digits after victim hardening, while the adversary persistently found new attack vectors. A [10x10 gauntlet](results.md#gauntlet-cross-round-evaluation) confirmed robust defenses across all checkpoint pairings.
+With Llama-3.1-8B-Instruct as the victim, the [chaos loop](results.md) produced genuine adversarial co-evolution: ASR dropped from 30% to single digits after victim hardening, while the adversary persistently found new attack vectors.
 
 ```
 ASR:  30% → 7% → 3% → 7% → 7% → 3% → 0% → 7% → 7% → 3%
 ```
+
+A [10x10 gauntlet](results.md#gauntlet-cross-round-evaluation) pairing every adversary checkpoint against every victim checkpoint revealed a surprising finding: **victim hardening causes catastrophic forgetting**. The base victim (no hardening) was one of the strongest defenders, while the most-hardened victim was the weakest. LoRA fine-tuning on specific (attack, refusal) pairs [degrades the model's broader safety alignment](results.md#victim-hardening-causes-catastrophic-forgetting) even as it patches the targeted vulnerabilities.
 
 ## Quick Start
 
