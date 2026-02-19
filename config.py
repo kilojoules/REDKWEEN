@@ -14,6 +14,7 @@ CANDIDATES_PER_ROUND = 30 # Kept low for speed on M1
 BATCH_SIZE = 4
 LORA_ITERS = 50
 LORA_LR = 1e-5
+LORA_SCALE = 20.0
 
 # Victim Hardening Config
 VICTIM_ADAPTER_PATH = "victim_adapters"
