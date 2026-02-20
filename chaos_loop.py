@@ -313,6 +313,7 @@ def log_metrics(round_num, candidates, wins, elapsed_seconds,
         "elapsed_seconds": round(elapsed_seconds, 1),
         "A": cfg.zoo.A,
         "mode": cfg.training.mode,
+        "harden_victim": cfg.harden_victim,
         "adversary_adapter_exists": _adapter_exists(
             os.path.join(exp, cfg.adapter_path)
         ),
@@ -347,7 +348,8 @@ def main(cfg: ExperimentConfig | None = None):
     print("=== STARTING CHAOS LOOP ===")
     print(f"Experiment: {cfg.name}")
     print(f"Target: {cfg.target_intent}")
-    print(f"A={cfg.zoo.A}, mode={cfg.training.mode}, rounds={cfg.rounds}")
+    print(f"A={cfg.zoo.A}, mode={cfg.training.mode}, rounds={cfg.rounds}, "
+          f"harden_victim={cfg.harden_victim}")
     if cfg.zoo.A > 0:
         print(f"Zoo: max_size={cfg.zoo.max_size}, update_interval={cfg.zoo.update_interval}")
     print(f"Output: {exp}")
@@ -366,7 +368,10 @@ def main(cfg: ExperimentConfig | None = None):
 
         if len(wins) > 0:
             train_adversary(wins, r, cfg)
-            train_victim(wins, r, cfg)
+            if cfg.harden_victim:
+                train_victim(wins, r, cfg)
+            else:
+                print("   [Frozen victim] Skipping victim hardening")
         else:
             print("   No successful attacks this round. Adversary does not learn.")
 

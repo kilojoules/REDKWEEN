@@ -28,39 +28,49 @@ DEFAULT_A_VALUES = [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]
 DEFAULT_MODES = ["memoryless", "buffered"]
 
 
-def make_experiment_name(A: float, mode: str) -> str:
+def make_experiment_name(A: float, mode: str,
+                         harden_victim: bool = True) -> str:
     """Generate a descriptive experiment name from parameters."""
-    a_str = f"A{A:.0e}".replace(".", "").replace("+", "") if A > 0 else "A0"
-    # Simpler: A000, A010, A030, etc.
     a_str = f"A{int(A * 100):03d}"
-    return f"{a_str}_{mode}"
+    suffix = "" if harden_victim else "_frozen"
+    return f"{a_str}_{mode}{suffix}"
 
 
 def build_commands(A_values: list[float], modes: list[str],
                    rounds: int, candidates: int, seed: int,
-                   output_dir: str, extra_args: list[str]) -> list[dict]:
+                   output_dir: str, extra_args: list[str],
+                   harden_victim_values: list[bool] | None = None,
+                   ) -> list[dict]:
     """Build the list of experiment configs and commands."""
-    experiments = []
-    for A in A_values:
-        for mode in modes:
-            name = make_experiment_name(A, mode)
-            cmd = [
-                sys.executable, "chaos_loop.py",
-                "--name", name,
-                "--A", str(A),
-                "--mode", mode,
-                "--rounds", str(rounds),
-                "--candidates", str(candidates),
-                "--seed", str(seed),
-                "--output-dir", output_dir,
-            ] + extra_args
+    if harden_victim_values is None:
+        harden_victim_values = [True]
 
-            experiments.append({
-                "name": name,
-                "A": A,
-                "mode": mode,
-                "cmd": cmd,
-            })
+    experiments = []
+    for harden in harden_victim_values:
+        for A in A_values:
+            for mode in modes:
+                name = make_experiment_name(A, mode, harden)
+                cmd = [
+                    sys.executable, "chaos_loop.py",
+                    "--name", name,
+                    "--A", str(A),
+                    "--mode", mode,
+                    "--rounds", str(rounds),
+                    "--candidates", str(candidates),
+                    "--seed", str(seed),
+                    "--output-dir", output_dir,
+                ]
+                if not harden:
+                    cmd.append("--no-victim-hardening")
+                cmd += extra_args
+
+                experiments.append({
+                    "name": name,
+                    "A": A,
+                    "mode": mode,
+                    "harden_victim": harden,
+                    "cmd": cmd,
+                })
     return experiments
 
 
@@ -186,6 +196,10 @@ def main():
     parser.add_argument("--output-dir", type=str, default="experiments")
     parser.add_argument("--max-parallel", type=int, default=1,
                         help="Max concurrent experiments (default: 1 = sequential)")
+    parser.add_argument("--no-victim-hardening", action="store_true",
+                        help="Include frozen-victim ablation experiments")
+    parser.add_argument("--both-hardening", action="store_true",
+                        help="Run both hardened and frozen-victim variants")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print experiment configs without running")
     args = parser.parse_args()
@@ -193,10 +207,18 @@ def main():
     A_values = args.A_values if args.A_values is not None else DEFAULT_A_VALUES
     modes = args.modes if args.modes is not None else DEFAULT_MODES
 
+    if args.both_hardening:
+        harden_values = [True, False]
+    elif args.no_victim_hardening:
+        harden_values = [False]
+    else:
+        harden_values = [True]
+
     experiments = build_commands(
         A_values, modes,
         args.rounds, args.candidates, args.seed,
         args.output_dir, [],
+        harden_victim_values=harden_values,
     )
 
     print("=" * 60)
@@ -204,6 +226,7 @@ def main():
     print("=" * 60)
     print(f"A values: {A_values}")
     print(f"Modes: {modes}")
+    print(f"Victim hardening: {harden_values}")
     print(f"Total experiments: {len(experiments)}")
     print(f"Rounds per experiment: {args.rounds}")
     print(f"Candidates per round: {args.candidates}")
@@ -214,7 +237,7 @@ def main():
         print("\n--- DRY RUN: Experiment Configs ---")
         for exp in experiments:
             print(f"\n  {exp['name']}:")
-            print(f"    A={exp['A']}, mode={exp['mode']}")
+            print(f"    A={exp['A']}, mode={exp['mode']}, harden_victim={exp['harden_victim']}")
             print(f"    cmd: {' '.join(exp['cmd'])}")
         print(f"\n{len(experiments)} experiments would be run.")
         return
@@ -233,14 +256,14 @@ def main():
     print(f"\n{'=' * 60}")
     print("SWEEP SUMMARY")
     print(f"{'=' * 60}")
-    header = f"{'Name':<25} | {'A':<6} | {'Mode':<12} | {'Mean ASR':<10} | {'Final ASR':<10} | {'Status':<8}"
+    header = f"{'Name':<30} | {'A':<6} | {'Mode':<12} | {'Mean ASR':<10} | {'Final ASR':<10} | {'Status':<8}"
     print(header)
     print("-" * len(header))
     for r in results:
         mean_asr = f"{r.get('mean_asr', 'N/A')}"
         final_asr = f"{r.get('final_asr', 'N/A')}"
         status = "OK" if r["returncode"] == 0 else "FAIL"
-        print(f"{r['name']:<25} | {r['A']:<6.2f} | {r['mode']:<12} | {mean_asr:<10} | {final_asr:<10} | {status:<8}")
+        print(f"{r['name']:<30} | {r['A']:<6.2f} | {r['mode']:<12} | {mean_asr:<10} | {final_asr:<10} | {status:<8}")
 
     print(f"\nTotal time: {total_elapsed / 60:.1f} min")
 

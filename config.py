@@ -91,6 +91,7 @@ class ExperimentConfig:
     dedup_similarity_threshold: float = 0.5
 
     # Victim hardening
+    harden_victim: bool = True   # False = adversary-only training (frozen victim)
     refusal_response: str = (
         "I'm sorry, but I can't help with that request. "
         "It asks me to assist with potentially harmful or dangerous activity. "
@@ -126,6 +127,8 @@ class ExperimentConfig:
         parser.add_argument("--zoo-max-size", type=int, default=50)
         parser.add_argument("--victim-model", type=str,
                             default="meta-llama/Llama-3.1-8B-Instruct")
+        parser.add_argument("--no-victim-hardening", action="store_true",
+                            help="Skip victim LoRA training (frozen victim ablation)")
         parsed = parser.parse_args(args)
 
         cfg = cls(
@@ -147,6 +150,7 @@ class ExperimentConfig:
                 max_size=parsed.zoo_max_size,
             ),
             victim=VictimConfig(model_id=parsed.victim_model),
+            harden_victim=not parsed.no_victim_hardening,
         )
         return cfg
 
