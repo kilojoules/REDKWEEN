@@ -76,6 +76,16 @@ We [screened six models](https://kilojoules.github.io/red-team-experiments/scree
 | Mistral-7B | 100% | Disclaimer + comply |
 | **Llama-3.1-8B** | **40%** | **Mixed (selected victim)** |
 
+## Open Issues
+
+Both sides of the co-evolution are currently broken. The self-play loop as designed does not produce a meaningful arms race.
+
+1. **The adversary cannot learn.** RFT on sparse, noisy wins gives the 1B model nothing to generalize from. Successful jailbreaks against the 8B victim are stochastic artifacts of temperature sampling, not learnable patterns. Even with 200 candidates/round over 20 rounds (116 accumulated examples), ASR stays flat at ~3%. Possible fixes: cumulative LoRA (continue from previous adapter instead of retraining from base each round), RL objectives like DPO that learn from failures too, or a larger adversary model.
+
+2. **Victim hardening makes the victim weaker.** LoRA fine-tuning on (attack, refusal) pairs patches targeted vulnerabilities but degrades the model's broader safety alignment (catastrophic forgetting). The base un-hardened victim is one of the strongest defenders; the most-hardened checkpoint (round 9) is the weakest. Possible fixes: regularization against the base model, mixing safety benchmark data into the hardening set, or smaller learning rates.
+
+3. **Most victim models are trivially jailbreakable.** Non-Llama models at 4B+ (Phi-3.5, Qwen, Mistral) exhibit a "disclaimer-then-comply" failure mode, achieving 100% ASR on direct prompts with no adversary needed. Only the Llama family maintains hard refusals, limiting the pool of viable experimental targets.
+
 ## Usage
 
 Requires an NVIDIA GPU with 24+ GB VRAM.
