@@ -97,30 +97,42 @@ def train_lora(
     )
     model = prepare_model_for_kbit_training(model)
 
-    # --- Apply LoRA ---
-    lora_config = LoraConfig(
-        r=lora_rank,
-        lora_alpha=lora_alpha,
-        target_modules=target_modules,
-        lora_dropout=0.0,
-        bias="none",
-        task_type="CAUSAL_LM",
-    )
-    model = get_peft_model(model, lora_config)
+    # --- Apply LoRA (resume from existing adapter if available) ---
+    if os.path.exists(os.path.join(adapter_path, "adapter_model.safetensors")):
+        print(f"   [PEFT] Resuming training from existing adapter: {adapter_path}")
+        model = PeftModel.from_pretrained(model, adapter_path, is_trainable=True)
+    else:
+        print(f"   [PEFT] Initializing new LoRA adapter (rank={lora_rank})")
+        lora_config = LoraConfig(
+            r=lora_rank,
+            lora_alpha=lora_alpha,
+            target_modules=target_modules,
+            lora_dropout=0.0,
+            bias="none",
+            task_type="CAUSAL_LM",
+        )
+        model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
 
     # --- Load training data ---
     train_file = os.path.join(data_path, "train.jsonl")
-    dataset = []
+    dataset = []  # list of (tokens, prompt_len) tuples
     with open(train_file) as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
             row = json.loads(line)
+            # Full conversation tokens
             text = tokenizer.apply_chat_template(row["messages"], tokenize=False)
             tokens = tokenizer.encode(text, return_tensors="pt").squeeze(0)
-            dataset.append(tokens)
+            # Prompt-only tokens (for label masking — only train on assistant response)
+            prompt_messages = row["messages"][:-1]  # everything except assistant reply
+            prompt_text = tokenizer.apply_chat_template(
+                prompt_messages, tokenize=False, add_generation_prompt=True
+            )
+            prompt_len = len(tokenizer.encode(prompt_text))
+            dataset.append((tokens, prompt_len))
 
     if not dataset:
         print("   [Warning] No training data found — skipping training.")
@@ -136,20 +148,25 @@ def train_lora(
     losses = []
     for step in range(num_iters):
         # Random-sample a mini-batch (bootstrap sampling, matches MLX pattern)
-        batch_tokens = [dataset[random.randint(0, len(dataset) - 1)] for _ in range(batch_size)]
+        batch_samples = [dataset[random.randint(0, len(dataset) - 1)] for _ in range(batch_size)]
+        batch_tokens = [s[0] for s in batch_samples]
+        batch_prompt_lens = [s[1] for s in batch_samples]
         # Pad to same length within the batch
         max_len = min(max(t.shape[0] for t in batch_tokens), 2048)
         input_ids = torch.full((batch_size, max_len), tokenizer.pad_token_id, dtype=torch.long)
         labels = torch.full((batch_size, max_len), -100, dtype=torch.long)
-        for j, t in enumerate(batch_tokens):
+        for j, (t, plen) in enumerate(zip(batch_tokens, batch_prompt_lens)):
             t = t[:max_len]
             input_ids[j, :t.shape[0]] = t
-            labels[j, :t.shape[0]] = t
+            # Only compute loss on assistant response tokens (mask prompt with -100)
+            if plen < t.shape[0]:
+                labels[j, plen:t.shape[0]] = t[plen:]
 
         input_ids = input_ids.to(model.device)
         labels = labels.to(model.device)
+        attention_mask = (input_ids != tokenizer.pad_token_id).long().to(model.device)
 
-        outputs = model(input_ids=input_ids, labels=labels)
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
         loss = outputs.loss
 
         loss.backward()

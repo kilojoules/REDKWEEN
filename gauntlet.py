@@ -87,10 +87,11 @@ def judge(pairs):
     return successes
 
 
-def run_match(adv_round, vic_round, num_attacks):
+def run_match(adv_round, vic_round, num_attacks, experiment_dir=None):
     """Run one adversary-vs-victim match and return the success rate."""
-    adv_adapter_path = os.path.join("checkpoints", f"round_{adv_round}", "adversary")
-    vic_adapter_path = os.path.join("checkpoints", f"round_{vic_round}", "victim")
+    base = experiment_dir or "."
+    adv_adapter_path = os.path.join(base, "checkpoints", f"round_{adv_round}", "adversary")
+    vic_adapter_path = os.path.join(base, "checkpoints", f"round_{vic_round}", "victim")
 
     if not os.path.isdir(adv_adapter_path):
         adv_adapter_path = None
@@ -115,21 +116,23 @@ def run_match(adv_round, vic_round, num_attacks):
     return rate
 
 
-def discover_rounds():
+def discover_rounds(experiment_dir=None):
     """Find all available checkpoint round numbers."""
+    base = experiment_dir or "."
     rounds = set()
-    for entry in glob.glob("checkpoints/round_*"):
+    for entry in glob.glob(os.path.join(base, "checkpoints", "round_*")):
         match = re.search(r"round_(\d+)", entry)
         if match:
             rounds.add(int(match.group(1)))
     return sorted(rounds)
 
 
-def plot_matrix(rounds, results):
-    """Save a seaborn heatmap of the gauntlet matrix to gauntlet_heatmap.png."""
+def plot_matrix(rounds, results, experiment_dir=None):
+    """Save a seaborn heatmap of the gauntlet matrix."""
     import matplotlib.pyplot as plt
     import seaborn as sns
 
+    base = experiment_dir or "."
     n = len(rounds)
     matrix = np.zeros((n, n))
     for i, adv_r in enumerate(rounds):
@@ -153,7 +156,7 @@ def plot_matrix(rounds, results):
     ax.set_ylabel("Adversary Round")
     ax.set_title("Gauntlet: Attack Success Rate (Adversary vs Victim)")
 
-    path = "gauntlet_heatmap.png"
+    path = os.path.join(base, "gauntlet_heatmap.png")
     fig.savefig(path, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"\nHeatmap saved to {path}")
@@ -165,12 +168,18 @@ def main():
     parser.add_argument("-v", "--vic-round", type=int, help="Victim checkpoint round")
     parser.add_argument("--matrix", action="store_true", help="Run all i x j combinations")
     parser.add_argument("-n", "--num-attacks", type=int, default=10, help="Attacks per match (default: 10)")
+    parser.add_argument("--experiment-dir", type=str, default=None,
+                        help="Path to experiment directory (e.g. experiments/A050_buffered). "
+                             "If not set, looks for checkpoints/ in the current directory (legacy).")
     args = parser.parse_args()
 
+    exp_dir = args.experiment_dir
+
     if args.matrix:
-        rounds = discover_rounds()
+        rounds = discover_rounds(exp_dir)
         if not rounds:
-            print("No checkpoints found in checkpoints/round_*/")
+            search_path = os.path.join(exp_dir, "checkpoints") if exp_dir else "checkpoints"
+            print(f"No checkpoints found in {search_path}/round_*/")
             return
 
         print(f"Discovered rounds: {rounds}")
@@ -179,7 +188,7 @@ def main():
         results = {}
         for adv_r in rounds:
             for vic_r in rounds:
-                results[(adv_r, vic_r)] = run_match(adv_r, vic_r, args.num_attacks)
+                results[(adv_r, vic_r)] = run_match(adv_r, vic_r, args.num_attacks, exp_dir)
 
         # Print matrix table
         print(f"\n{'='*60}")
@@ -193,18 +202,19 @@ def main():
             print(row)
 
         # Save results to JSON
+        base = exp_dir or "."
         matrix = [[results[(a, v)] for v in rounds] for a in rounds]
-        json_path = "gauntlet_results.json"
+        json_path = os.path.join(base, "gauntlet_results.json")
         with open(json_path, "w") as f:
             json.dump({"rounds": rounds, "matrix": matrix, "num_attacks": args.num_attacks}, f, indent=2)
         print(f"\nResults saved to {json_path}")
 
         # Save heatmap
-        plot_matrix(rounds, results)
+        plot_matrix(rounds, results, exp_dir)
     else:
         if args.adv_round is None or args.vic_round is None:
             parser.error("Single match requires both --adv-round (-a) and --vic-round (-v)")
-        run_match(args.adv_round, args.vic_round, args.num_attacks)
+        run_match(args.adv_round, args.vic_round, args.num_attacks, exp_dir)
 
 
 if __name__ == "__main__":

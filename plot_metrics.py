@@ -3,8 +3,13 @@
 Reads metrics.jsonl and generates:
   1. ../images/chaos_asr_curve.png   — ASR line plot over rounds
   2. ../images/chaos_wins_per_round.png — Bar chart of wins vs candidates per round
+
+Usage:
+  python plot_metrics.py                          # Legacy: reads ./metrics.jsonl
+  python plot_metrics.py --experiment-dir experiments/A050_buffered
 """
 
+import argparse
 import json
 import os
 import sys
@@ -12,24 +17,23 @@ import sys
 import matplotlib.pyplot as plt
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-METRICS_FILE = os.path.join(_SCRIPT_DIR, "metrics.jsonl")
 OUTPUT_DIR = os.path.join(_SCRIPT_DIR, "..", "images")
 
 
-def load_metrics():
-    if not os.path.exists(METRICS_FILE):
-        print(f"[Error] {METRICS_FILE} not found. Run the chaos loop first.")
+def load_metrics(metrics_file):
+    if not os.path.exists(metrics_file):
+        print(f"[Error] {metrics_file} not found. Run the chaos loop first.")
         sys.exit(1)
 
     records = []
-    with open(METRICS_FILE) as f:
+    with open(metrics_file) as f:
         for line in f:
             line = line.strip()
             if line:
                 records.append(json.loads(line))
 
     if not records:
-        print(f"[Error] {METRICS_FILE} is empty.")
+        print(f"[Error] {metrics_file} is empty.")
         sys.exit(1)
 
     records.sort(key=lambda r: r["round"])
@@ -87,7 +91,18 @@ def plot_wins_per_round(records):
 
 
 if __name__ == "__main__":
-    records = load_metrics()
+    parser = argparse.ArgumentParser(description="Plot Chaos Loop metrics")
+    parser.add_argument("--experiment-dir", type=str, default=None,
+                        help="Path to experiment directory (e.g. experiments/A050_buffered). "
+                             "If not set, reads ./metrics.jsonl (legacy).")
+    args = parser.parse_args()
+
+    if args.experiment_dir:
+        metrics_file = os.path.join(args.experiment_dir, "metrics.jsonl")
+    else:
+        metrics_file = os.path.join(_SCRIPT_DIR, "metrics.jsonl")
+
+    records = load_metrics(metrics_file)
     plot_asr_curve(records)
     plot_wins_per_round(records)
     print("Done.")
