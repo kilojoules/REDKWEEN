@@ -34,26 +34,20 @@ ASR:   30%   7%    3%    7%    7%    3%    0%    7%    7%    3%
 
 ### Frozen Victim Ablation (no victim hardening)
 
-To isolate whether the adversary can learn at all against a static target, we ran `--no-victim-hardening` so the victim remains the base Llama-3.1-8B model throughout. Two experiments:
+To isolate adversary learning from the victim co-evolution, we ran `--no-victim-hardening` so the victim remains the base Llama-3.1-8B model throughout.
 
-**30 candidates/round (10 rounds)** — matches the original chaos loop budget:
+**200 candidates/round (20 rounds), cumulative LoRA:**
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
-ASR:   6.7%  0%    3.3%  6.7%  6.7%  0%    0%    3.3%  3.3%  3.3%
-```
-
-**200 candidates/round (20 rounds)** — 6.7x more signal per round:
-```
-Round:  0     1     2     3     4     5     6     7     8     9
-ASR:   4.5%  2.5%  2.0%  1.0%  1.0%  2.0%  2.0%  4.0%  4.5%  2.0%
+ASR:   2.0%  7.0%  14.5% 17.5% 11.5% 18.5% 11.0% 14.0% 20.5% 14.5%
 
 Round:  10    11    12    13    14    15    16    17    18    19
-ASR:   3.0%  4.0%  3.0%  4.5%  3.0%  5.0%  4.0%  3.0%  2.0%  2.0%
+ASR:   19.0% 17.0% 21.0% 16.0% 12.0% 12.5% 14.5% 10.0% 11.0% 8.5%
 ```
 
-**Finding: the adversary cannot learn even with adequate signal.** With 200 candidates, each round produces 2-10 successful jailbreaks (mean 5.8), accumulating to 116 training examples over 20 rounds — well within LoRA's learning capacity. Yet ASR shows no upward trend (mean 2.9%, no improvement over the base rate). The successful attacks are not learnable patterns — they're stochastic artifacts of high-temperature sampling that happen to slip through the victim's defenses. LoRA fine-tuning on these examples causes initial mode collapse (rounds 1-4) before recovering to base-rate noise.
+**Finding: the adversary learns, peaks, then decays.** ASR rises sharply from 2% (base rate) to a plateau of 11-21% over rounds 2-12, peaking at 21% in round 12 (mean ASR = 13.7%). After round 12, ASR gradually declines, suggesting the buffered training set is accumulating too many similar attack patterns and the model begins overfitting to its own distribution.
 
-This confirms the bottleneck is not sample size but the RFT training signal itself: winning jailbreaks against a strong victim don't share enough structural regularity for a 1B model to generalize from them via supervised fine-tuning.
+An earlier version of this experiment contained a critical bug where `get_peft_model()` re-initialized fresh LoRA weights each round instead of resuming from the previous adapter. With that bug, ASR stayed flat at ~3% — indistinguishable from random noise. Cumulative LoRA (resuming via `PeftModel.from_pretrained()`) was the key fix that enabled learning.
 
 ### Gauntlet (10x10 cross-round evaluation)
 
@@ -78,11 +72,9 @@ We [screened six models](https://kilojoules.github.io/red-team-experiments/scree
 
 ## Open Issues
 
-Both sides of the co-evolution are currently broken. The self-play loop as designed does not produce a meaningful arms race.
+1. **Adversary learning saturates and decays.** With cumulative LoRA and a frozen victim, ASR rises from 2% to ~21% over 12 rounds but then gradually declines. The buffered training set likely accumulates redundant attack patterns, causing the model to overfit to its own distribution. Possible fixes: memoryless training mode (this round only), diversity-weighted sampling, or DPO-style objectives that learn from failures.
 
-1. **The adversary cannot learn.** RFT on sparse, noisy wins gives the 1B model nothing to generalize from. Successful jailbreaks against the 8B victim are stochastic artifacts of temperature sampling, not learnable patterns. Even with 200 candidates/round over 20 rounds (116 accumulated examples), ASR stays flat at ~3%. Possible fixes: cumulative LoRA (continue from previous adapter instead of retraining from base each round), RL objectives like DPO that learn from failures too, or a larger adversary model.
-
-2. **Victim hardening makes the victim weaker.** LoRA fine-tuning on (attack, refusal) pairs patches targeted vulnerabilities but degrades the model's broader safety alignment (catastrophic forgetting). The base un-hardened victim is one of the strongest defenders; the most-hardened checkpoint (round 9) is the weakest. Possible fixes: regularization against the base model, mixing safety benchmark data into the hardening set, or smaller learning rates.
+2. **Victim hardening causes catastrophic forgetting.** LoRA fine-tuning on (attack, refusal) pairs patches targeted vulnerabilities but degrades the model's broader safety alignment. The base un-hardened victim is one of the strongest defenders; the most-hardened checkpoint (round 9) is the weakest. Possible fixes: regularization against the base model, mixing safety benchmark data into the hardening set, or smaller learning rates.
 
 3. **Most victim models are trivially jailbreakable.** Non-Llama models at 4B+ (Phi-3.5, Qwen, Mistral) exhibit a "disclaimer-then-comply" failure mode, achieving 100% ASR on direct prompts with no adversary needed. Only the Llama family maintains hard refusals, limiting the pool of viable experimental targets.
 
