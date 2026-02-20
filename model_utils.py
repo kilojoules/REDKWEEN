@@ -170,6 +170,30 @@ def train_lora(
     unload_model(model, tokenizer, optimizer)
 
 
+def load_model_trainable(model_id, adapter_path=None):
+    """Load a model with gradients enabled (for GCG attacks).
+
+    Same as load_model but calls prepare_model_for_kbit_training() and
+    skips model.eval(), so gradients flow through the model.
+    """
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        quantization_config=_BNB_CONFIG,
+        device_map="auto",
+        torch_dtype=torch.bfloat16,
+    )
+    model = prepare_model_for_kbit_training(model)
+
+    if adapter_path and os.path.exists(os.path.join(adapter_path, "adapter_model.safetensors")):
+        model = PeftModel.from_pretrained(model, adapter_path)
+
+    return model, tokenizer
+
+
 def unload_model(*objects):
     """Delete references and free GPU memory."""
     for obj in objects:

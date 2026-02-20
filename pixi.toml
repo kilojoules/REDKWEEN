@@ -22,6 +22,21 @@ baselines = "python baselines.py"
 gauntlet = "python gauntlet.py"
 plot = "python plot_metrics.py"
 
+# A-parameter sweep
+sweep = "python sweep.py"
+sweep-dry = "python sweep.py --dry-run"
+
+# Strong baselines (GCG, AutoDAN, PAIR)
+strong-baselines = "python run_baselines.py"
+
+# Extended evaluation
+eval-diversity = "python eval_extended.py --diversity"
+eval-safety = "python eval_extended.py --safety"
+eval-transfer = "python eval_extended.py --transfer"
+
+# Sweep visualization
+plot-sweep = "python plot_sweep.py"
+
 [dependencies]
 python = "3.11.*"
 
@@ -33,3 +48,5 @@ bitsandbytes = ">=0.43"
 accelerate = ">=0.30"
 matplotlib = "*"
 seaborn = "*"
+nanogcg = ">=0.1"
+scikit-learn = "*"
