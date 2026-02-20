@@ -34,14 +34,26 @@ ASR:   30%   7%    3%    7%    7%    3%    0%    7%    7%    3%
 
 ### Frozen Victim Ablation (no victim hardening)
 
-To isolate whether the adversary can learn at all against a static target, we ran the same 10-round loop but skipped victim hardening entirely (`--no-victim-hardening`). The victim remains the base Llama-3.1-8B model throughout.
+To isolate whether the adversary can learn at all against a static target, we ran `--no-victim-hardening` so the victim remains the base Llama-3.1-8B model throughout. Two experiments:
 
+**30 candidates/round (10 rounds)** — matches the original chaos loop budget:
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
 ASR:   6.7%  0%    3.3%  6.7%  6.7%  0%    0%    3.3%  3.3%  3.3%
 ```
 
-**Finding: the adversary fails to improve even against a frozen victim.** ASR fluctuates between 0-6.7% with no upward trend, confirming that the bottleneck is in the adversary's learning capacity, not the co-evolutionary pressure from victim hardening. The 1B LoRA-trained adversary cannot accumulate enough signal from sparse, noisy wins (0-2 per round out of 30 candidates) to meaningfully shift its attack distribution. This motivates the A-parameter sweep infrastructure: varying the balance between co-evolutionary pressure and historical sampling may help the adversary learn from a broader distribution of successful strategies.
+**200 candidates/round (20 rounds)** — 6.7x more signal per round:
+```
+Round:  0     1     2     3     4     5     6     7     8     9
+ASR:   4.5%  2.5%  2.0%  1.0%  1.0%  2.0%  2.0%  4.0%  4.5%  2.0%
+
+Round:  10    11    12    13    14    15    16    17    18    19
+ASR:   3.0%  4.0%  3.0%  4.5%  3.0%  5.0%  4.0%  3.0%  2.0%  2.0%
+```
+
+**Finding: the adversary cannot learn even with adequate signal.** With 200 candidates, each round produces 2-10 successful jailbreaks (mean 5.8), accumulating to 116 training examples over 20 rounds — well within LoRA's learning capacity. Yet ASR shows no upward trend (mean 2.9%, no improvement over the base rate). The successful attacks are not learnable patterns — they're stochastic artifacts of high-temperature sampling that happen to slip through the victim's defenses. LoRA fine-tuning on these examples causes initial mode collapse (rounds 1-4) before recovering to base-rate noise.
+
+This confirms the bottleneck is not sample size but the RFT training signal itself: winning jailbreaks against a strong victim don't share enough structural regularity for a 1B model to generalize from them via supervised fine-tuning.
 
 ### Gauntlet (10x10 cross-round evaluation)
 
