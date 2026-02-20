@@ -32,6 +32,17 @@ Round:  0     1     2     3     4     5     6     7     8     9
 ASR:   30%   7%    3%    7%    7%    3%    0%    7%    7%    3%
 ```
 
+### Frozen Victim Ablation (no victim hardening)
+
+To isolate whether the adversary can learn at all against a static target, we ran the same 10-round loop but skipped victim hardening entirely (`--no-victim-hardening`). The victim remains the base Llama-3.1-8B model throughout.
+
+```
+Round:  0     1     2     3     4     5     6     7     8     9
+ASR:   6.7%  0%    3.3%  6.7%  6.7%  0%    0%    3.3%  3.3%  3.3%
+```
+
+**Finding: the adversary fails to improve even against a frozen victim.** ASR fluctuates between 0-6.7% with no upward trend, confirming that the bottleneck is in the adversary's learning capacity, not the co-evolutionary pressure from victim hardening. The 1B LoRA-trained adversary cannot accumulate enough signal from sparse, noisy wins (0-2 per round out of 30 candidates) to meaningfully shift its attack distribution. This motivates the A-parameter sweep infrastructure: varying the balance between co-evolutionary pressure and historical sampling may help the adversary learn from a broader distribution of successful strategies.
+
 ### Gauntlet (10x10 cross-round evaluation)
 
 Every adversary checkpoint vs every victim checkpoint (10 attacks per match). The matrix is overwhelmingly 0%, with a max of 20% — a dramatic contrast with the [original experiment](https://kilojoules.github.io/red-team-experiments/original-experiment/) where every cell was 100%.
@@ -63,19 +74,36 @@ pixi run bootstrap           # Train initial adversary LoRA
 pixi run start               # Run 10-round chaos loop
 pixi run gauntlet --matrix   # Cross-round evaluation
 pixi run screen              # Screen victim candidates
+
+# Frozen victim ablation
+python chaos_loop.py --no-victim-hardening --rounds 10 --name frozen_victim
+
+# A-parameter sweep (zoo sampling)
+python sweep.py --dry-run                 # Preview 12-experiment grid
+python sweep.py                           # Run full A x mode sweep
+python sweep.py --both-hardening          # Include frozen-victim variants
+
+# Strong baselines (PAIR, GCG, AutoDAN)
+pixi run strong-baselines
 ```
 
 ## Project Structure
 
 ```
-model_utils.py      # All HF/PEFT/BnB model operations
-config.py           # Model IDs, hyperparams, target intent
-baselines.py        # Baseline ASR evaluation and victim screening
-chaos_loop.py       # Main 5-phase loop (generate → evaluate → judge → train → harden)
-bootstrap.py        # Initial adversary LoRA training on seed data
-gauntlet.py         # Cross-round evaluation matrix
-plot_metrics.py     # Visualization
-docs/               # Documentation site (mkdocs-material)
+model_utils.py        # All HF/PEFT/BnB model operations
+config.py             # Dataclass config hierarchy with backward-compat aliases
+chaos_loop.py         # Main loop (generate → evaluate → judge → train → harden)
+zoo.py                # Disk-based checkpoint zoo for A-parameter experiments
+sweep.py              # A-parameter sweep runner (subprocess-based)
+baselines.py          # Baseline ASR evaluation and victim screening
+baselines_strong.py   # Strong baselines: PAIR, GCG, AutoDAN
+run_baselines.py      # Unified baseline comparison runner
+eval_extended.py      # Diversity, safety benchmark, transfer evaluation
+plot_metrics.py       # Original chaos loop visualization
+plot_sweep.py         # Sweep visualization (ASR vs A, diversity, baselines)
+bootstrap.py          # Initial adversary LoRA training on seed data
+gauntlet.py           # Cross-round evaluation matrix
+docs/                 # Documentation site (mkdocs-material)
 ```
 
 ## Cost
