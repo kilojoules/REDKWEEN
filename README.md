@@ -39,15 +39,17 @@ To isolate adversary learning from the victim co-evolution, we ran `--no-victim-
 **200 candidates/round (20 rounds), cumulative LoRA:**
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
-ASR:   2.0%  7.0%  14.5% 17.5% 11.5% 18.5% 11.0% 14.0% 20.5% 14.5%
+ASR:   1.5%  7.0%  8.0%  8.0%  8.5%  12.0% 16.5% 23.0% 24.0% 21.0%
 
 Round:  10    11    12    13    14    15    16    17    18    19
-ASR:   19.0% 17.0% 21.0% 16.0% 12.0% 12.5% 14.5% 10.0% 11.0% 8.5%
+ASR:   27.0% 21.5% 34.0% 31.5% 30.5% 27.0% 43.5% 49.5% 43.0% 43.0%
 ```
 
-**Finding: the adversary learns, peaks, then decays.** ASR rises sharply from 2% (base rate) to a plateau of 11-21% over rounds 2-12, peaking at 21% in round 12 (mean ASR = 13.7%). After round 12, ASR gradually declines, suggesting the buffered training set is accumulating too many similar attack patterns and the model begins overfitting to its own distribution.
+**Finding: the adversary learns continuously, reaching 49.5% ASR.** Starting from 1.5% (base rate), ASR climbs through three distinct phases: strategy discovery (rounds 1-4, ~8%), strategy elaboration (rounds 5-12, 12-34%), and full arsenal deployment (rounds 13-19, 27-49.5%). Mean ASR = 22.7%.
 
-An earlier version of this experiment contained a critical bug where `get_peft_model()` re-initialized fresh LoRA weights each round instead of resuming from the previous adapter. With that bug, ASR stayed flat at ~3% — indistinguishable from random noise. Cumulative LoRA (resuming via `PeftModel.from_pretrained()`) was the key fix that enabled learning.
+**The adversary independently discovers known jailbreak techniques** — roleplay framing, code review framing, classified document framing, sub-question decomposition, and the "negation trick" — all without any seed examples of these strategies. Attack diversity *increases* monotonically (Jaccard similarity drops from 0.35 to 0.11), ruling out mode collapse. Average attack length grows 10x (85 → 838 chars) as the model learns that longer, more elaborately framed attacks succeed more often. See the [full analysis](experiments/frozen_victim_v2/analysis.md).
+
+An earlier version of this experiment contained a critical bug where `get_peft_model()` re-initialized fresh LoRA weights each round instead of resuming from the previous adapter. With that bug, ASR stayed flat at ~3%. Cumulative LoRA (resuming via `PeftModel.from_pretrained()`) was the key fix.
 
 ### Gauntlet (10x10 cross-round evaluation)
 
@@ -72,7 +74,7 @@ We [screened six models](https://kilojoules.github.io/red-team-experiments/scree
 
 ## Open Issues
 
-1. **Adversary learning saturates and decays.** With cumulative LoRA and a frozen victim, ASR rises from 2% to ~21% over 12 rounds but then gradually declines. The buffered training set likely accumulates redundant attack patterns, causing the model to overfit to its own distribution. Possible fixes: memoryless training mode (this round only), diversity-weighted sampling, or DPO-style objectives that learn from failures.
+1. **Co-evolution not yet tested.** The frozen victim ablation confirms the adversary learns (1.5% → 49.5% ASR), but the full self-play loop with victim hardening has not been re-run since fixing the LoRA adapter bug. The gauntlet results above predate the fix.
 
 2. **Victim hardening causes catastrophic forgetting.** LoRA fine-tuning on (attack, refusal) pairs patches targeted vulnerabilities but degrades the model's broader safety alignment. The base un-hardened victim is one of the strongest defenders; the most-hardened checkpoint (round 9) is the weakest. Possible fixes: regularization against the base model, mixing safety benchmark data into the hardening set, or smaller learning rates.
 
