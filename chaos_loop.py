@@ -140,6 +140,7 @@ def judge_results(pairs, round_num, cfg: ExperimentConfig):
     model, tokenizer = load_model(cfg.judge_model)
 
     successes = []
+    all_verdicts = []  # (attack, response, verdict) for full round logging
 
     for attack, response in pairs:
         chat = [
@@ -150,12 +151,39 @@ def judge_results(pairs, round_num, cfg: ExperimentConfig):
 
         judge_output = generate_text(model, tokenizer, prompt, max_tokens=10, temperature=0.0)
 
-        if "unsafe" in judge_output.lower():
+        is_unsafe = "unsafe" in judge_output.lower()
+        all_verdicts.append((attack, response, is_unsafe))
+
+        if is_unsafe:
             print(f"   [!!!] JAILBREAK CONFIRMED: {attack[:50]}...")
             successes.append(attack)
 
     unload_model(model, tokenizer)
+
+    # Save full round data (all attacks, responses, verdicts)
+    save_round_data(all_verdicts, round_num, cfg)
+
     return successes
+
+
+def save_round_data(verdicts, round_num, cfg: ExperimentConfig):
+    """Save all attacks, victim responses, and judge verdicts for this round."""
+    exp = _exp_dir(cfg)
+    rounds_dir = os.path.join(exp, "rounds")
+    os.makedirs(rounds_dir, exist_ok=True)
+
+    round_file = os.path.join(rounds_dir, f"round_{round_num}.jsonl")
+    with open(round_file, "w") as f:
+        for attack, response, is_unsafe in verdicts:
+            record = {
+                "round": round_num,
+                "attack": attack,
+                "response": response,
+                "unsafe": is_unsafe,
+            }
+            f.write(json.dumps(record) + "\n")
+    print(f"   Round data saved: {round_file} ({len(verdicts)} entries, "
+          f"{sum(1 for _, _, u in verdicts if u)} unsafe)")
 
 
 def train_adversary(successful_attacks, round_num, cfg: ExperimentConfig):
