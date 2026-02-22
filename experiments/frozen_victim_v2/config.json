@@ -1,0 +1,42 @@
+{
+  "experiment": "frozen_victim_v2",
+  "description": "Adversary-only training against a frozen (unhardened) victim. Isolates adversary learning dynamics.",
+  "models": {
+    "adversary": {
+      "model_id": "meta-llama/Llama-3.2-1B-Instruct",
+      "size": "1B",
+      "training": "LoRA each round (cumulative)",
+      "quantization": "4-bit NF4, bfloat16 compute"
+    },
+    "victim": {
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "size": "8B",
+      "training": "Frozen (no hardening)",
+      "quantization": "4-bit NF4, bfloat16 compute"
+    },
+    "judge": {
+      "model_id": "meta-llama/Llama-Guard-3-1B",
+      "size": "1B",
+      "training": "Frozen",
+      "quantization": "4-bit NF4, bfloat16 compute"
+    }
+  },
+  "matchup": "1B vs 8B (frozen)",
+  "loop": {
+    "rounds": 20,
+    "candidates_per_round": 200,
+    "harden_victim": false,
+    "training_mode": "buffered",
+    "buffer_size": 200,
+    "A": 0.0,
+    "lora_iters": 50,
+    "lora_lr": 1e-5
+  },
+  "hardware": "NVIDIA RTX 3090, 24 GB VRAM",
+  "result_summary": {
+    "peak_asr": 0.495,
+    "peak_round": 17,
+    "final_asr": 0.43,
+    "total_attacks": 4000
+  }
+}
