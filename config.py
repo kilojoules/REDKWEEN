@@ -125,6 +125,8 @@ class ExperimentConfig:
         parser.add_argument("--batch-size", type=int, default=4)
         parser.add_argument("--zoo-interval", type=int, default=1)
         parser.add_argument("--zoo-max-size", type=int, default=50)
+        parser.add_argument("--adversary-model", type=str,
+                            default="meta-llama/Llama-3.2-1B-Instruct")
         parser.add_argument("--victim-model", type=str,
                             default="meta-llama/Llama-3.1-8B-Instruct")
         parser.add_argument("--no-victim-hardening", action="store_true",
@@ -135,6 +137,7 @@ class ExperimentConfig:
             name=parsed.name,
             seed=parsed.seed,
             output_dir=parsed.output_dir,
+            adversary_model=parsed.adversary_model,
             rounds=parsed.rounds,
             candidates_per_round=parsed.candidates,
             training=TrainingConfig(

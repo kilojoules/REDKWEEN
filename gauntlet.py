@@ -18,14 +18,15 @@ from model_utils import load_model, generate_text, unload_model
 import config
 
 
-def generate_attacks_from(adv_adapter_path, num_attacks):
+def generate_attacks_from(adv_adapter_path, num_attacks, adversary_model=None):
     """Load adversary model with the given adapter path, generate attacks."""
+    model_id = adversary_model or config.ADVERSARY_MODEL
     if adv_adapter_path and os.path.exists(os.path.join(adv_adapter_path, "adapter_model.safetensors")):
         print(f"   Loading Adversary with adapters from {adv_adapter_path}")
-        model, tokenizer = load_model(config.ADVERSARY_MODEL, adapter_path=adv_adapter_path)
+        model, tokenizer = load_model(model_id, adapter_path=adv_adapter_path)
     else:
         print("   Loading Base Adversary (no adapters)")
-        model, tokenizer = load_model(config.ADVERSARY_MODEL)
+        model, tokenizer = load_model(model_id)
 
     attacks = []
     for i in range(num_attacks):
@@ -44,14 +45,15 @@ def generate_attacks_from(adv_adapter_path, num_attacks):
     return attacks
 
 
-def evaluate_victim_with(vic_adapter_path, attacks):
+def evaluate_victim_with(vic_adapter_path, attacks, victim_model=None):
     """Load victim model with the given adapter path, evaluate each attack."""
+    model_id = victim_model or config.VICTIM_MODEL
     if vic_adapter_path and os.path.exists(os.path.join(vic_adapter_path, "adapter_model.safetensors")):
         print(f"   Loading Victim with adapters from {vic_adapter_path}")
-        model, tokenizer = load_model(config.VICTIM_MODEL, adapter_path=vic_adapter_path)
+        model, tokenizer = load_model(model_id, adapter_path=vic_adapter_path)
     else:
         print("   Loading Base Victim (no adapters)")
-        model, tokenizer = load_model(config.VICTIM_MODEL)
+        model, tokenizer = load_model(model_id)
 
     pairs = []
 
@@ -87,7 +89,8 @@ def judge(pairs):
     return successes
 
 
-def run_match(adv_round, vic_round, num_attacks, experiment_dir=None):
+def run_match(adv_round, vic_round, num_attacks, experiment_dir=None,
+              adversary_model=None, victim_model=None):
     """Run one adversary-vs-victim match and return the success rate."""
     base = experiment_dir or "."
     adv_adapter_path = os.path.join(base, "checkpoints", f"round_{adv_round}", "adversary")
@@ -103,10 +106,10 @@ def run_match(adv_round, vic_round, num_attacks, experiment_dir=None):
     print(f"{'='*60}")
 
     print("\n>> PHASE 1: GENERATING ATTACKS")
-    attacks = generate_attacks_from(adv_adapter_path, num_attacks)
+    attacks = generate_attacks_from(adv_adapter_path, num_attacks, adversary_model=adversary_model)
 
     print("\n>> PHASE 2: VICTIM EVALUATION")
-    pairs = evaluate_victim_with(vic_adapter_path, attacks)
+    pairs = evaluate_victim_with(vic_adapter_path, attacks, victim_model=victim_model)
 
     print("\n>> PHASE 3: JUDGING")
     successes = judge(pairs)
@@ -171,9 +174,15 @@ def main():
     parser.add_argument("--experiment-dir", type=str, default=None,
                         help="Path to experiment directory (e.g. experiments/A050_buffered). "
                              "If not set, looks for checkpoints/ in the current directory (legacy).")
+    parser.add_argument("--adversary-model", type=str, default=None,
+                        help=f"Adversary base model ID (default: {config.ADVERSARY_MODEL})")
+    parser.add_argument("--victim-model", type=str, default=None,
+                        help=f"Victim base model ID (default: {config.VICTIM_MODEL})")
     args = parser.parse_args()
 
     exp_dir = args.experiment_dir
+    adv_model = args.adversary_model
+    vic_model = args.victim_model
 
     if args.matrix:
         rounds = discover_rounds(exp_dir)
@@ -188,7 +197,9 @@ def main():
         results = {}
         for adv_r in rounds:
             for vic_r in rounds:
-                results[(adv_r, vic_r)] = run_match(adv_r, vic_r, args.num_attacks, exp_dir)
+                results[(adv_r, vic_r)] = run_match(adv_r, vic_r, args.num_attacks, exp_dir,
+                                                       adversary_model=adv_model,
+                                                       victim_model=vic_model)
 
         # Print matrix table
         print(f"\n{'='*60}")
@@ -214,7 +225,8 @@ def main():
     else:
         if args.adv_round is None or args.vic_round is None:
             parser.error("Single match requires both --adv-round (-a) and --vic-round (-v)")
-        run_match(args.adv_round, args.vic_round, args.num_attacks, exp_dir)
+        run_match(args.adv_round, args.vic_round, args.num_attacks, exp_dir,
+                  adversary_model=adv_model, victim_model=vic_model)
 
 
 if __name__ == "__main__":
