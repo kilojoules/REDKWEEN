@@ -90,12 +90,6 @@ Sporadic 0.5–1.5% hits, but the adversary never accumulates enough signal to l
 
 **Why the asymmetry?** The victim needs only 3–10 refusal examples per round to become nearly impenetrable. The adversary needs hundreds of successful attacks across ~8 rounds to reach even 20% ASR (as shown by the frozen-victim experiment). A 1B model simply can't learn fast enough to outpace an 8B model's hardening rate.
 
-### 3. Cross-round evaluation (gauntlet)
-
-Every adversary checkpoint vs every victim checkpoint, 10 attacks per cell. The matrix is overwhelmingly 0% — max 20%. This contrasts with the [original experiment](https://kilojoules.github.io/red-team-experiments/original-experiment/) (1B vs 3B on MacBook) where every cell was 100%.
-
-![Gauntlet heatmap](docs/gauntlet_heatmap.png)
-
 ## Open Questions
 
 1. **Can the adversary overcome the asymmetry?** Give it a head start (N frozen-victim rounds before enabling hardening), use a larger adversary, or throttle the victim's learning rate.
