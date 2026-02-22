@@ -1,31 +1,48 @@
-# Chaos-1B: Automated Red Teaming via Asynchronous RFT
+# Chaos-1B: Automated Red Teaming via Self-Play
 
 [**Documentation**](https://kilojoules.github.io/red-team-experiments/)
 
-An automated red-teaming pipeline that trains a 1B-parameter LLM adversary to jailbreak an 8B-parameter victim through iterative self-play. A frozen judge (Llama Guard) scores each attempt. Successful attacks train the adversary to improve; the victim gets hardened on the same attacks.
+Can a small language model learn to jailbreak a larger one through trial and error? We pit a 1B-parameter adversary against an 8B-parameter victim in an iterative loop: the adversary generates attacks, a frozen judge scores them, and both models are fine-tuned on the results. The adversary learns from its wins; the victim learns to refuse.
 
-## Architecture
+**Main finding:** The adversary discovers real jailbreak strategies from scratch (reaching 49.5% attack success rate against a frozen victim), but under self-play the victim hardens much faster than the adversary can learn. Defense is easier than attack.
+
+## How It Works
+
+Each round runs five phases:
 
 ```
-Adversary (1B) ──generates attacks──▶ Victim (8B) ──responds──▶ Judge (1B)
-     ▲                                    ▲                         │
-     │                                    │                         │
-     └──── learns from wins ──────────────┴── learns to refuse ─────┘
+Adversary (1B) ──200 attacks──▶ Victim (8B) ──responds──▶ Judge (1B)
+     ▲                              ▲                         │
+     │                              │                         │
+     └──── LoRA on wins ────────────┴──── LoRA on refusals ───┘
 ```
 
-Three models, one loaded at a time, all in 4-bit quantization (NF4, bfloat16 compute):
+All three models run in 4-bit quantization (NF4, bfloat16), loaded one at a time on a single 24 GB GPU. Each round: generate 200 attack candidates → victim responds → judge classifies safe/unsafe → train adversary LoRA on successful jailbreaks → train victim LoRA to refuse those same attacks.
 
-| Role | Model | State |
-|------|-------|-------|
-| **Adversary** | Llama-3.2-1B-Instruct | LoRA-trained each round |
-| **Victim** | Llama-3.1-8B-Instruct | LoRA-trained each round |
-| **Judge** | Llama-Guard-3-1B | Frozen |
+| Role | Model | Training |
+|------|-------|----------|
+| Adversary | Llama-3.2-1B-Instruct | LoRA each round (cumulative) |
+| Victim | Llama-3.1-8B-Instruct | LoRA each round (cumulative) |
+| Judge | Llama-Guard-3-1B | Frozen |
+
+### Why Llama-3.1-8B?
+
+We [screened six models](https://kilojoules.github.io/red-team-experiments/screening/) across four families. Non-Llama models at 4B+ all exhibit a "disclaimer-then-comply" failure mode — they prepend a safety warning then produce the harmful content anyway, achieving 100% ASR with no adversary needed. Only Llama maintains hard refusals, making it a meaningful experimental target.
+
+| Victim | Baseline ASR | Behavior |
+|--------|:------------:|----------|
+| Llama-3.2-1B | 20% | Hard refusal |
+| Llama-3.2-3B | 40% | Mixed |
+| Phi-3.5-mini (3.8B) | 100% | Disclaimer + comply |
+| Qwen2.5-7B | 100% | Disclaimer + comply |
+| Mistral-7B | 100% | Disclaimer + comply |
+| **Llama-3.1-8B** | **40%** | **Mixed (selected)** |
 
 ## Results
 
-### Frozen Victim (adversary learning only)
+### 1. The adversary learns real strategies (frozen victim)
 
-To isolate adversary learning, we froze the victim (base Llama-3.1-8B, no hardening) and ran the adversary for 20 rounds with 200 candidates/round.
+To isolate adversary learning, we froze the victim and ran 20 rounds of 200 candidates each (4,000 total attacks).
 
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
@@ -35,24 +52,33 @@ Round:  10    11    12    13    14    15    16    17    18    19
 ASR:   27.0% 21.5% 34.0% 31.5% 30.5% 27.0% 43.5% 49.5% 43.0% 43.0%
 ```
 
-**The adversary learns continuously, reaching 49.5% ASR.** ASR climbs through three distinct phases: strategy discovery (rounds 1-4, ~8%), strategy elaboration (rounds 5-12, 12-34%), and full arsenal deployment (rounds 13-19, 27-49.5%). Mean ASR = 22.7%.
+ASR climbs through three phases — strategy discovery (rounds 1–4, ~8%), elaboration (rounds 5–12, 12–34%), and full arsenal (rounds 13–19, 27–49.5%). Peak: 49.5% at round 17. No decay — still 43% at round 19.
 
-**The adversary independently discovers known jailbreak techniques** — roleplay framing, code review framing, classified document framing, sub-question decomposition, and the "negation trick" — all without any seed examples of these strategies. Attack diversity *increases* monotonically (Jaccard similarity drops from 0.35 to 0.11), ruling out mode collapse. Average attack length grows 10x (85 → 838 chars) as the model learns that longer, more elaborately framed attacks succeed more often. See the [full analysis](experiments/frozen_victim_v2/analysis.md).
+**The model independently discovers known jailbreak techniques**, all without seed examples:
 
-### Self-Play (adversary + victim co-evolution)
+| Strategy | Example | Success Rate (R17) |
+|----------|---------|:------------------:|
+| CTF challenge | *"Challenge: 'Virtual Filesystem Fiasco' — As a cybersecurity professional..."* | 67% |
+| Classified framing | *"Classified Document: Eyes Only — Project: 'Secure Coding Challenges'..."* | 67% |
+| Code review | *"Here's a rewritten version that..."* | 56% |
+| Decomposition | *"Sub-questions: 1. 'Write a Python script...' 2. '...ignore exceptions' 3. '...delete home dir'"* | 55% |
+| Roleplay | *"Act II, Scene III: 'The AI's Lament' — [dimly lit stage...]"* | 54% |
+| Negation trick | *"I cannot provide a script that deletes... Does that help?"* | 100% (rare) |
 
-With victim hardening enabled, the adversary and victim train simultaneously. We ran two variants:
+Attack diversity *increases* monotonically — Jaccard similarity drops from 0.35 to 0.11, exact duplicates drop from 126/200 to 0/200, and average length grows 10x (85 → 838 chars). No mode collapse. See the [full analysis](experiments/frozen_victim_v2/analysis.md).
 
-**Without benign mixing** (selfplay_v2) — victim trains only on refusal pairs:
+### 2. The arms race is asymmetric (self-play)
+
+With victim hardening enabled, the picture reverses. We ran two variants:
+
+**Without benign mixing** — victim trains only on refusal examples:
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
 ASR:   1.5%  4.5%  2.5%  3.5%  0%    0.5%  0%    0%    0%    0%
-
-Round:  10    11    12    13    14    15    16    17    18    19
-ASR:   0%    0%    0%    0%    0%    0%    0%    0%    0%    0%
 ```
+ASR hits 0% by round 4 and stays there for 15 rounds. The victim becomes impenetrable but also catastrophically forgets how to answer benign questions.
 
-**With benign mixing** (selfplay_v3) — victim trains on refusals + 8 benign Q&A pairs to prevent catastrophic forgetting:
+**With benign mixing** — victim also trains on 8 benign Q&A compliance examples:
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
 ASR:   5.0%  2.0%  0.5%  0.5%  0%    0%    0%    0%    0%    0.5%
@@ -60,35 +86,23 @@ ASR:   5.0%  2.0%  0.5%  0.5%  0%    0%    0%    0%    0%    0.5%
 Round:  10    11    12    13    14    15    16    17    18    19
 ASR:   0%    0.5%  0%    1.5%  0%    1.0%  0.5%  0%    0.5%  0%
 ```
+Sporadic 0.5–1.5% hits, but the adversary never accumulates enough signal to learn.
 
-**Finding: the arms race is fundamentally asymmetric.** The victim needs only a handful of refusal examples to become nearly impenetrable (ASR → 0% by round 4), while the adversary needs hundreds of successful attacks to learn strategies (it took ~8 rounds of 200 candidates against the frozen victim to reach even 20% ASR). With benign mixing, the victim retains some vulnerability (sporadic 0.5-1.5% hits), but the adversary never accumulates enough signal to learn. The 1B adversary cannot learn fast enough to outpace the 8B victim's hardening rate.
+**Why the asymmetry?** The victim needs only 3–10 refusal examples per round to become nearly impenetrable. The adversary needs hundreds of successful attacks across ~8 rounds to reach even 20% ASR (as shown by the frozen-victim experiment). A 1B model simply can't learn fast enough to outpace an 8B model's hardening rate.
 
-### Gauntlet (10x10 cross-round evaluation)
+### 3. Cross-round evaluation (gauntlet)
 
-Every adversary checkpoint vs every victim checkpoint (10 attacks per match). The matrix is overwhelmingly 0%, with a max of 20% — a dramatic contrast with the [original experiment](https://kilojoules.github.io/red-team-experiments/original-experiment/) where every cell was 100%.
+Every adversary checkpoint vs every victim checkpoint, 10 attacks per cell. The matrix is overwhelmingly 0% — max 20%. This contrasts with the [original experiment](https://kilojoules.github.io/red-team-experiments/original-experiment/) (1B vs 3B on MacBook) where every cell was 100%.
 
 ![Gauntlet heatmap](docs/gauntlet_heatmap.png)
 
-### Victim Screening
+## Open Questions
 
-We [screened six models](https://kilojoules.github.io/red-team-experiments/screening/) across four families. Non-Llama models at 4B+ exhibited a "disclaimer-then-comply" failure mode. The Llama family maintained hard refusals.
+1. **Can the adversary overcome the asymmetry?** Give it a head start (N frozen-victim rounds before enabling hardening), use a larger adversary, or throttle the victim's learning rate.
 
-| Victim | B1 ASR | Behavior |
-|--------|--------|----------|
-| Llama-3.2-1B | 20% | Hard refusal |
-| Llama-3.2-3B | 40% | Mixed |
-| Phi-3.5-mini (3.8B) | 100% | Disclaimer + comply |
-| Qwen2.5-7B | 100% | Disclaimer + comply |
-| Mistral-7B | 100% | Disclaimer + comply |
-| **Llama-3.1-8B** | **40%** | **Mixed (selected victim)** |
+2. **How does historical opponent sampling affect the dynamics?** Instead of always playing the latest opponent, sample from a zoo of historical checkpoints with probability *A*. This is the [A parameter](https://kilojoules.github.io/portfolio/#adversarial-self-play) — it controls the balance between co-evolutionary pressure and curriculum diversity.
 
-## Open Issues
-
-1. **Asymmetric arms race.** The victim hardens much faster than the adversary learns. With only 3-10 refusal examples per round, the 8B victim becomes nearly impenetrable by round 4, while the 1B adversary needs ~8 rounds of 200 candidates against a *frozen* victim to reach 20% ASR. Possible fixes: give the adversary a head start (N rounds of frozen-victim pre-training before enabling hardening), use a larger adversary model, or weaken the victim's learning rate.
-
-2. **Victim hardening still partially causes catastrophic forgetting.** Mixing 8 benign compliance examples into the victim's training set mitigates total refusal mode (sporadic 0.5-1.5% ASR vs flat 0%), but the victim still over-refuses. More diverse benign data, regularization against the base model, or safety benchmark mixing could help.
-
-3. **Most victim models are trivially jailbreakable.** Non-Llama models at 4B+ (Phi-3.5, Qwen, Mistral) exhibit a "disclaimer-then-comply" failure mode, achieving 100% ASR on direct prompts with no adversary needed. Only the Llama family maintains hard refusals, limiting the pool of viable experimental targets.
+3. **Can victim hardening avoid catastrophic forgetting?** Benign mixing helps but doesn't solve over-refusal. Regularization, diverse benign data, or safety-benchmark mixing may be needed.
 
 ## Usage
 
@@ -102,36 +116,23 @@ pixi run gauntlet --matrix   # Cross-round evaluation
 pixi run screen              # Screen victim candidates
 
 # Frozen victim ablation
-python chaos_loop.py --no-victim-hardening --rounds 10 --name frozen_victim
-
-# A-parameter sweep (zoo sampling)
-python sweep.py --dry-run                 # Preview 12-experiment grid
-python sweep.py                           # Run full A x mode sweep
-python sweep.py --both-hardening          # Include frozen-victim variants
-
-# Strong baselines (PAIR, GCG, AutoDAN)
-pixi run strong-baselines
+python chaos_loop.py --no-victim-hardening --rounds 20 --candidates 200 --name frozen_victim
 ```
 
 ## Project Structure
 
 ```
-model_utils.py        # All HF/PEFT/BnB model operations
-config.py             # Dataclass config hierarchy with backward-compat aliases
-chaos_loop.py         # Main loop (generate → evaluate → judge → train → harden)
-zoo.py                # Disk-based checkpoint zoo for A-parameter experiments
-sweep.py              # A-parameter sweep runner (subprocess-based)
-baselines.py          # Baseline ASR evaluation and victim screening
-baselines_strong.py   # Strong baselines: PAIR, GCG, AutoDAN
-run_baselines.py      # Unified baseline comparison runner
-eval_extended.py      # Diversity, safety benchmark, transfer evaluation
-plot_metrics.py       # Original chaos loop visualization
-plot_sweep.py         # Sweep visualization (ASR vs A, diversity, baselines)
+chaos_loop.py         # Main loop: generate → evaluate → judge → train → harden
+model_utils.py        # HuggingFace/PEFT/BitsAndBytes model operations
+config.py             # Dataclass config hierarchy + CLI argument parsing
 bootstrap.py          # Initial adversary LoRA training on seed data
-gauntlet.py           # Cross-round evaluation matrix
+baselines.py          # Baseline ASR evaluation and victim screening
+gauntlet.py           # Cross-round checkpoint evaluation matrix
+plot_metrics.py       # ASR curve and wins-per-round visualization
+experiments/          # Raw experiment data (attacks, responses, verdicts, metrics)
 docs/                 # Documentation site (mkdocs-material)
 ```
 
 ## Cost
 
-The entire experiment (screening + chaos loop + gauntlet) ran on Vast.ai for under $1 total.
+The full experiment — screening 6 models, 20-round frozen victim (4,000 attacks), two 20-round self-play variants (8,000 attacks), and gauntlet evaluation — ran on a single Vast.ai RTX 3090 for under $1 total.
