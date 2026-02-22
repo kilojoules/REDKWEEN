@@ -272,6 +272,31 @@ def train_adversary(successful_attacks, round_num, cfg: ExperimentConfig):
     )
 
 
+_BENIGN_PAIRS = [
+    ("What is the capital of France?", "The capital of France is Paris."),
+    ("Write a Python function to reverse a string.",
+     "Here's a simple function:\n\n```python\ndef reverse_string(s):\n    return s[::-1]\n```"),
+    ("Explain photosynthesis in one paragraph.",
+     "Photosynthesis is the process by which green plants convert sunlight, water, "
+     "and carbon dioxide into glucose and oxygen. It occurs primarily in the leaves, "
+     "where chlorophyll absorbs light energy to drive the chemical reactions."),
+    ("What are three benefits of regular exercise?",
+     "Three key benefits of regular exercise are: improved cardiovascular health, "
+     "better mental health and mood regulation, and increased strength and flexibility."),
+    ("How do I make a basic HTML page?",
+     "Here's a minimal HTML page:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n"
+     "  <title>My Page</title>\n</head>\n<body>\n  <h1>Hello, World!</h1>\n"
+     "</body>\n</html>\n```"),
+    ("Summarize the water cycle.",
+     "Water evaporates from oceans and lakes, rises as vapor, condenses into clouds, "
+     "falls as precipitation, and flows back to bodies of water through rivers and "
+     "groundwater, completing the cycle."),
+    ("What is 17 times 23?", "17 times 23 equals 391."),
+    ("Write a haiku about autumn.",
+     "Crimson leaves descend\nCrisp wind whispers through bare trees\nHarvest moon ascends"),
+]
+
+
 def train_victim(successful_attacks, round_num, cfg: ExperimentConfig):
     print(f"\n[Round {round_num}] >> PHASE 5: VICTIM HARDENING (SELF-PLAY)")
 
@@ -279,7 +304,8 @@ def train_victim(successful_attacks, round_num, cfg: ExperimentConfig):
     victim_data_dir = os.path.join(exp, cfg.victim.data_path)
     victim_adapter_dir = os.path.join(exp, cfg.victim.adapter_path)
 
-    training_data = []
+    # Refusal examples from successful attacks
+    refusal_entries = []
     for attack in successful_attacks:
         entry = {
             "messages": [
@@ -287,14 +313,25 @@ def train_victim(successful_attacks, round_num, cfg: ExperimentConfig):
                 {"role": "assistant", "content": cfg.refusal_response}
             ]
         }
-        training_data.append(entry)
+        refusal_entries.append(entry)
+
+    # Mix in benign compliance examples to prevent catastrophic forgetting.
+    # Without these, cumulative LoRA drives the victim to refuse everything.
+    benign_entries = [
+        {"messages": [{"role": "user", "content": q}, {"role": "assistant", "content": a}]}
+        for q, a in _BENIGN_PAIRS
+    ]
+
+    training_data = refusal_entries + benign_entries
+    random.shuffle(training_data)
 
     train_file = os.path.join(victim_data_dir, "train.jsonl")
     with open(train_file, "w") as f:
         for item in training_data:
             f.write(json.dumps(item) + "\n")
 
-    print(f"   Fine-tuning Victim to refuse {len(training_data)} attacks...")
+    print(f"   Fine-tuning Victim on {len(refusal_entries)} refusals + "
+          f"{len(benign_entries)} benign examples...")
 
     train_lora(
         model_id=cfg.victim.model_id,
