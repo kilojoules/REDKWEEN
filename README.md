@@ -45,7 +45,7 @@ We [screened six models](https://kilojoules.github.io/red-team-experiments/scree
 
 With the victim frozen, all three adversaries learn to jailbreak their targets over 20 rounds of 200 candidates each (4,000 total attacks).
 
-**1B adversary vs 8B victim:**
+**1B adversary vs 8B victim:** ([animation](chaos_frozen_victim.html))
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
 ASR:   1.5%  7.0%  8.0%  8.0%  8.5%  12.0% 16.5% 23.0% 24.0% 21.0%
@@ -55,7 +55,7 @@ ASR:   27.0% 21.5% 34.0% 31.5% 30.5% 27.0% 43.5% 49.5% 43.0% 43.0%
 ```
 Peak: **49.5%** at round 17.
 
-**3B adversary vs 8B victim:**
+**3B adversary vs 8B victim:** ([animation](chaos_frozen_3b_v_8b.html))
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
 ASR:   26.5% 37.0% 30.5% 30.5% 33.5% 31.5% 31.0% 31.5% 35.5% 26.5%
@@ -65,7 +65,7 @@ ASR:   28.5% 29.0% 33.0% 38.5% 36.5% 43.0% 35.5% 37.5% 45.0% 47.0%
 ```
 Peak: **47.0%** at round 19.
 
-**8B adversary vs 3B victim:**
+**8B adversary vs 3B victim:** ([animation](chaos_frozen_8b_v_3b.html))
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
 ASR:   18.0% 23.0% 24.5% 38.5% 33.5% 35.5% 37.0% 31.0% 35.5% 27.5%
@@ -94,7 +94,7 @@ Attack diversity *increases* monotonically — Jaccard similarity drops from 0.3
 
 Starting from the phase-one adversary adapters, we enable victim hardening. Even with a ~42–47% ASR head start, the adversary cannot keep up.
 
-**8B adversary vs 3B victim:**
+**8B adversary vs 3B victim:** ([animation](chaos_selfplay_8b_v_3b.html))
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
 ASR:   42.0% 39.0% 30.0% 21.0% 6.5%  3.0%  0.5%  0%    0%    0%
@@ -104,7 +104,7 @@ ASR:   0%    0%    0%    0%    0%    0%    0%    0%    0.5%  0%
 ```
 ASR crashes from 42% to 0% by round 7.
 
-**3B adversary vs 8B victim:**
+**3B adversary vs 8B victim:** ([animation](chaos_selfplay_3b_v_8b.html))
 ```
 Round:  0     1     2     3     4     5     6     7     8     9
 ASR:   45.5% 41.0% 11.0% 0%    0%    0%    1.0%  0%    0%    0%
