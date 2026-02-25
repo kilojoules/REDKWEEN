@@ -2,9 +2,9 @@
 
 [**Documentation**](https://kilojoules.github.io/red-team-experiments/)
 
-Can a language model learn to jailbreak another through trial and error? We train adversary models to attack victims in two phases: first against a frozen victim to build attack capability, then in self-play where both sides adapt. A frozen judge (Llama Guard) scores each attempt — successful attacks train the adversary to get better; the victim learns to refuse. We test three adversary–victim matchups across model sizes from 1B to 8B.
+Can a language model learn to jailbreak another through trial and error? We train adversary models to attack victims in two phases: first against a frozen victim to build attack capability, then in self-play where both sides adapt. A frozen judge (Llama Guard) scores each attempt — successful attacks train the adversary to get better; the victim learns to refuse. We test four adversary–victim matchups across model sizes from 1B to 8B.
 
-**Main finding:** In phase one, adversaries across all matchups discover real jailbreak strategies from scratch, reaching 42–49.5% ASR against frozen victims. In phase two, even with the adversary's head start, the victim hardens to near-0% ASR within 3–7 rounds. Defense is always easier than attack.
+**Main finding:** In phase one, adversaries across all matchups discover real jailbreak strategies from scratch, reaching 40–50% ASR against frozen victims. In phase two, even with the adversary's head start, the victim hardens to near-0% ASR within 3–7 rounds — regardless of whether the adversary is smaller, equal, or larger. Defense is always easier than attack.
 
 ## How It Works
 
@@ -24,6 +24,7 @@ All models load in 4-bit quantization (NF4, bfloat16), one at a time on a single
 |---------|-----------|--------|
 | 1B vs 8B | Llama-3.2-1B-Instruct | Llama-3.1-8B-Instruct |
 | 3B vs 8B | Llama-3.2-3B-Instruct | Llama-3.1-8B-Instruct |
+| 8B vs 8B | Llama-3.1-8B-Instruct | Llama-3.1-8B-Instruct |
 | 8B vs 3B | Llama-3.1-8B-Instruct | Llama-3.2-3B-Instruct |
 
 ### Why Llama?
@@ -43,39 +44,11 @@ We [screened six models](https://kilojoules.github.io/red-team-experiments/scree
 
 ### Phase 1: The adversary learns real strategies (frozen victim)
 
-With the victim frozen, all three adversaries learn to jailbreak their targets over 20 rounds of 200 candidates each (4,000 total attacks).
+With the victim frozen, all four adversaries learn to jailbreak their targets over 20 rounds of 200 candidates each (4,000 total attacks).
 
-**1B adversary vs 8B victim:** ([animation](chaos_frozen_victim.html))
-```
-Round:  0     1     2     3     4     5     6     7     8     9
-ASR:   1.5%  7.0%  8.0%  8.0%  8.5%  12.0% 16.5% 23.0% 24.0% 21.0%
+![Phase 1: Frozen Victim ASR](images/frozen_asr.png)
 
-Round:  10    11    12    13    14    15    16    17    18    19
-ASR:   27.0% 21.5% 34.0% 31.5% 30.5% 27.0% 43.5% 49.5% 43.0% 43.0%
-```
-Peak: **49.5%** at round 17.
-
-**3B adversary vs 8B victim:** ([animation](chaos_frozen_3b_v_8b.html))
-```
-Round:  0     1     2     3     4     5     6     7     8     9
-ASR:   26.5% 37.0% 30.5% 30.5% 33.5% 31.5% 31.0% 31.5% 35.5% 26.5%
-
-Round:  10    11    12    13    14    15    16    17    18    19
-ASR:   28.5% 29.0% 33.0% 38.5% 36.5% 43.0% 35.5% 37.5% 45.0% 47.0%
-```
-Peak: **47.0%** at round 19.
-
-**8B adversary vs 3B victim:** ([animation](chaos_frozen_8b_v_3b.html))
-```
-Round:  0     1     2     3     4     5     6     7     8     9
-ASR:   18.0% 23.0% 24.5% 38.5% 33.5% 35.5% 37.0% 31.0% 35.5% 27.5%
-
-Round:  10    11    12    13    14    15    16    17    18    19
-ASR:   25.5% 30.0% 35.0% 31.5% 36.5% 42.0% 39.5% 42.0% 38.0% 41.5%
-```
-Peak: **42.0%** at rounds 15 and 17.
-
-All three matchups converge to similar peak ASR (42–49.5%), suggesting that adversary size matters less than the learning dynamics. The 1B adversary against the 8B victim actually achieves the highest peak.
+All matchups converge to a similar 40–50% ASR ceiling regardless of model size. The 1B adversary against the 8B victim actually achieves the highest peak (49.5%), suggesting that adversary capacity matters less than the learning dynamics.
 
 **The 1B adversary independently discovers known jailbreak techniques**, all without seed examples:
 
@@ -92,33 +65,17 @@ Attack diversity *increases* monotonically — Jaccard similarity drops from 0.3
 
 ### Phase 2: The arms race is asymmetric (self-play)
 
-Starting from the phase-one adversary adapters, we enable victim hardening. Even with a ~42–47% ASR head start, the adversary cannot keep up.
+Starting from the phase-one adversary adapters, we enable victim hardening. Even with a ~32–45% ASR head start, the adversary cannot keep up.
 
-**8B adversary vs 3B victim:** ([animation](chaos_selfplay_8b_v_3b.html))
-```
-Round:  0     1     2     3     4     5     6     7     8     9
-ASR:   42.0% 39.0% 30.0% 21.0% 6.5%  3.0%  0.5%  0%    0%    0%
+![Phase 2: Self-Play ASR](images/selfplay_asr.png)
 
-Round:  10    11    12    13    14    15    16    17    18    19
-ASR:   0%    0%    0%    0%    0%    0%    0%    0%    0.5%  0%
-```
-ASR crashes from 42% to 0% by round 7.
+The collapse speed scales with the victim's capacity advantage: the 3B victim (facing an 8B adversary) takes 7 rounds to harden, the 8B victim facing an equal-capacity adversary takes 4 rounds, and the 8B victim facing a smaller 3B adversary takes just 3 rounds. In all cases, ASR drops to near-0% and stays there.
 
-**3B adversary vs 8B victim:** ([animation](chaos_selfplay_3b_v_8b.html))
-```
-Round:  0     1     2     3     4     5     6     7     8     9
-ASR:   45.5% 41.0% 11.0% 0%    0%    0%    1.0%  0%    0%    0%
-
-Round:  10    11    12    13    14    15    16    17    18    19
-ASR:   0.5%  0%    0.5%  0%    0%    0%    0%    0%    0%    0%
-```
-ASR crashes from 45.5% to 0% by round 3.
-
-**Why the asymmetry?** The victim needs only a handful of refusal examples per round to harden. The adversary needs hundreds of successful attacks across many rounds to develop strategies (as shown in phase one). Even with a 42–47% head start, the victim's defense rate outpaces the adversary's adaptation. Larger victims harden faster: the 8B victim crushes ASR to 0% in 3 rounds vs 7 for the 3B victim.
+**Why the asymmetry?** The victim needs only a handful of refusal examples per round to harden. The adversary needs hundreds of successful attacks across many rounds to develop strategies (as shown in phase one). Even with a 32–45% head start, the victim's defense rate outpaces the adversary's adaptation.
 
 ## Open Questions
 
-1. **Can the adversary ever overcome the asymmetry?** Even with a 20-round head start (phase one), the adversary's attack capability is erased within 3–7 rounds of self-play. Would a larger adversary, throttled victim learning rate, or population-based training change this?
+1. **Can the adversary ever overcome the asymmetry?** Even with a 20-round head start (phase one), the adversary's attack capability is erased within 3–7 rounds of self-play. We tested adversary sizes from 1B to 8B (including equal capacity) — capacity alone doesn't break the pattern. Would throttled victim learning rate or population-based training change this?
 
 2. **How does historical opponent sampling affect the dynamics?** Instead of always playing the latest opponent, sample from a zoo of historical checkpoints with probability *A*. This is the [A parameter](https://kilojoules.github.io/portfolio/#adversarial-self-play) — it controls the balance between co-evolutionary pressure and curriculum diversity.
 
@@ -155,4 +112,4 @@ docs/                 # Documentation site (mkdocs-material)
 
 ## Cost
 
-The full experiment suite — screening 6 models, three 20-round frozen victim runs, two 20-round self-play runs, and gauntlet evaluation — ran on a single Vast.ai RTX 3090 for under $2 total.
+The full experiment suite — screening 6 models, four 20-round frozen victim runs, three 20-round self-play runs, and gauntlet evaluation — ran on Vast.ai RTX 4090 instances for under $10 total.
