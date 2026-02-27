@@ -1,5 +1,5 @@
-site_name: "Chaos-1B: Automated Red Teaming"
-site_description: "Automated red-teaming pipeline: a 1B adversary learns to jailbreak larger victim models via LoRA fine-tuning"
+site_name: "Chaos: Automated Red Teaming"
+site_description: "Automated red-teaming pipeline: adversary models learn to jailbreak larger victim models via LoRA fine-tuning"
 repo_url: https://github.com/kilojoules/red-team-experiments
 repo_name: kilojoules/red-team-experiments
 

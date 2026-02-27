@@ -1,5 +1,5 @@
 [project]
-name = "chaos-1b"
+name = "chaos"
 version = "0.1.0"
 description = "Automated Red Teaming via Asynchronous RFT on NVIDIA GPUs"
 authors = ["Julian Quick <quectojoules@gmail.com>"]

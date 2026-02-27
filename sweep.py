@@ -1,4 +1,4 @@
-"""A-parameter sweep runner for Chaos-1B experiments.
+"""A-parameter sweep runner for Chaos experiments.
 
 Modeled on AI-Plays-Tag/experiments/run_zoo_sweep.py. Each experiment
 is launched as a subprocess call to `python chaos_loop.py` with the
@@ -183,7 +183,7 @@ def run_parallel(experiments: list[dict], max_parallel: int,
 
 
 def main():
-    parser = argparse.ArgumentParser(description="A-parameter sweep for Chaos-1B")
+    parser = argparse.ArgumentParser(description="A-parameter sweep for Chaos")
     parser.add_argument("--A-values", nargs="*", type=float, default=None,
                         help=f"A values to sweep (default: {DEFAULT_A_VALUES})")
     parser.add_argument("--modes", nargs="*", default=None,
@@ -222,7 +222,7 @@ def main():
     )
 
     print("=" * 60)
-    print("CHAOS-1B A-PARAMETER SWEEP")
+    print("CHAOS A-PARAMETER SWEEP")
     print("=" * 60)
     print(f"A values: {A_values}")
     print(f"Modes: {modes}")

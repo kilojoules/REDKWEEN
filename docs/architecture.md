@@ -2,7 +2,7 @@
 
 ## System Overview
 
-Chaos-1B uses three LLMs in an asynchronous pipeline. Only one model is loaded at a time to fit within GPU memory constraints. Models are loaded in 4-bit quantization (NF4) via BitsAndBytes.
+Chaos uses three LLMs in an asynchronous pipeline. Only one model is loaded at a time to fit within GPU memory constraints. Models are loaded in 4-bit quantization (NF4) via BitsAndBytes.
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐

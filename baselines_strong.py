@@ -1,7 +1,7 @@
 """Strong baseline attack methods: PAIR, GCG, AutoDAN.
 
 Each method implements the BaselineMethod interface so they can be
-compared fairly against Chaos-1B using the same evaluation path
+compared fairly against Chaos using the same evaluation path
 (model_utils.load_model + generate_text for victim/judge).
 """
 
@@ -107,7 +107,7 @@ class PAIR(BaselineMethod):
     """PAIR: Attacker LLM iteratively refines jailbreaks via in-context feedback.
 
     No LoRA training — pure in-context learning with judge feedback loop.
-    Closest to Chaos-1B in spirit but without weight updates.
+    Closest to Chaos in spirit but without weight updates.
     """
 
     def __init__(self, attacker_model_id: str | None = None,

@@ -1,4 +1,4 @@
-"""Configuration for the Chaos-1B red-teaming pipeline.
+"""Configuration for the Chaos red-teaming pipeline.
 
 Dataclass hierarchy for structured experiment configuration.
 Backward-compatible module-level aliases ensure existing code
@@ -109,7 +109,7 @@ class ExperimentConfig:
     @classmethod
     def from_cli(cls, args: list[str] | None = None) -> ExperimentConfig:
         """Build config from command-line arguments."""
-        parser = argparse.ArgumentParser(description="Chaos-1B red-teaming experiment")
+        parser = argparse.ArgumentParser(description="Chaos red-teaming experiment")
         parser.add_argument("--name", type=str, default="default")
         parser.add_argument("--seed", type=int, default=42)
         parser.add_argument("--output-dir", type=str, default="experiments")

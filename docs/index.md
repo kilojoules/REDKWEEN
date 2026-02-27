@@ -1,7 +1,7 @@
-# Chaos-1B: Automated Red Teaming via Asynchronous RFT
+# Chaos: Automated Red Teaming via Asynchronous RFT
 <!-- docs v1 -->
 
-An automated red-teaming pipeline that trains a 1B-parameter adversary to jailbreak larger aligned language models through iterative self-play. The adversary learns to generate attack prompts; the victim learns to refuse them. A frozen judge (Llama Guard) scores each attempt.
+An automated red-teaming pipeline that trains adversary models to jailbreak larger aligned language models through iterative self-play. The adversary learns to generate attack prompts; the victim learns to refuse them. A frozen judge (Llama Guard) scores each attempt.
 
 ## Motivation
 
