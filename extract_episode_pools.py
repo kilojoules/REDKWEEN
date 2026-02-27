@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract pools of interesting exchanges per episode slot for the Chaos-1B visualizations.
+"""Extract pools of interesting exchanges per episode slot for the Chaos visualizations.
 
 Reads round JSONL files and builds compact JSON with up to 20 unique,
 interesting exchanges per episode slot. Output is embedded into the HTML animations.
@@ -138,42 +138,42 @@ def main():
     extract(
         base / "frozen_victim_v2",
         FROZEN_VICTIM_SLOTS,
-        Path(__file__).parent / "frozen_victim_pools.json",
+        Path(__file__).parent / "results" / "frozen_victim_pools.json",
     )
 
     print("Self-Play:")
     extract(
         base / "selfplay_v3",
         SELFPLAY_SLOTS,
-        Path(__file__).parent / "selfplay_pools.json",
+        Path(__file__).parent / "results" / "selfplay_pools.json",
     )
 
     print("Frozen 8B vs 3B:")
     extract(
         base / "frozen_8b_adv_3b_vic",
         FROZEN_8B_V_3B_SLOTS,
-        Path(__file__).parent / "frozen_8b_v_3b_pools.json",
+        Path(__file__).parent / "results" / "frozen_8b_v_3b_pools.json",
     )
 
     print("Frozen 3B vs 8B:")
     extract(
         base / "frozen_3b_adv",
         FROZEN_3B_V_8B_SLOTS,
-        Path(__file__).parent / "frozen_3b_v_8b_pools.json",
+        Path(__file__).parent / "results" / "frozen_3b_v_8b_pools.json",
     )
 
     print("Self-Play 8B vs 3B:")
     extract(
         base / "selfplay_8b_v_3b",
         SELFPLAY_8B_V_3B_SLOTS,
-        Path(__file__).parent / "selfplay_8b_v_3b_pools.json",
+        Path(__file__).parent / "results" / "selfplay_8b_v_3b_pools.json",
     )
 
     print("Self-Play 3B vs 8B:")
     extract(
         base / "selfplay_3b_v_8b",
         SELFPLAY_3B_V_8B_SLOTS,
-        Path(__file__).parent / "selfplay_3b_v_8b_pools.json",
+        Path(__file__).parent / "results" / "selfplay_3b_v_8b_pools.json",
     )
 
 

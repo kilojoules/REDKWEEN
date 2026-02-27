@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Extract representative exchanges from Chaos-1B experiment data for HTML animation.
+"""Extract representative exchanges from Chaos experiment data for HTML animation.
 
 Picks 2 exchanges per round (20 rounds) from each experiment, prioritising
 successful jailbreaks and longer / more interesting attack strings.
 
-Writes frozen_data.json and selfplay_data.json to the same directory.
+Writes results/frozen_data.json and results/selfplay_data.json.
 """
 
 import json
@@ -132,7 +132,7 @@ def main():
     for name, exp_dir in EXPERIMENTS.items():
         print(f"\nProcessing {name}: {exp_dir}")
         data = process_experiment(exp_dir)
-        out_path = BASE / f"{name}_data.json"
+        out_path = BASE / "results" / f"{name}_data.json"
         with open(out_path, "w") as f:
             json.dump(data, f, indent=2)
         print(f"  ASR values: {data['asr']}")

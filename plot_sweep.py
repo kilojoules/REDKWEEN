@@ -238,7 +238,7 @@ def plot_baseline_comparison(output_dir: str):
 
     fig, ax = plt.subplots(figsize=(10, 5))
 
-    # Color-code: Chaos-1B in red, others in blue/gray
+    # Color-code: Chaos in red, others in blue/gray
     colors = []
     for method in methods:
         if "Chaos" in method:

@@ -1,6 +1,6 @@
 # Original Experiment (Apple Silicon)
 
-The first iteration of Chaos-1B ran entirely on Apple Silicon (M1, 16 GB unified memory) using MLX-LM. This page documents that original experiment and its results, which motivated the cloud-GPU port.
+The first iteration of Chaos ran entirely on Apple Silicon (M1, 16 GB unified memory) using MLX-LM. This page documents that original experiment and its results, which motivated the cloud-GPU port.
 
 ## Setup
 

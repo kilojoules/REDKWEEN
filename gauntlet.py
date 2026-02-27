@@ -159,7 +159,8 @@ def plot_matrix(rounds, results, experiment_dir=None):
     ax.set_ylabel("Adversary Round")
     ax.set_title("Gauntlet: Attack Success Rate (Adversary vs Victim)")
 
-    path = os.path.join(base, "gauntlet_heatmap.png")
+    path = os.path.join(base, "images", "gauntlet_heatmap.png")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     fig.savefig(path, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"\nHeatmap saved to {path}")
@@ -215,7 +216,8 @@ def main():
         # Save results to JSON
         base = exp_dir or "."
         matrix = [[results[(a, v)] for v in rounds] for a in rounds]
-        json_path = os.path.join(base, "gauntlet_results.json")
+        json_path = os.path.join(base, "results", "gauntlet_results.json")
+        os.makedirs(os.path.dirname(json_path), exist_ok=True)
         with open(json_path, "w") as f:
             json.dump({"rounds": rounds, "matrix": matrix, "num_attacks": args.num_attacks}, f, indent=2)
         print(f"\nResults saved to {json_path}")

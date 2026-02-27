@@ -8,7 +8,7 @@ import os
 
 ROUNDS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           "experiments", "frozen_victim_v2", "rounds")
-OUTPUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frozen_picks_6.json")
+OUTPUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "frozen_picks_6.json")
 MAX_CHARS = 500
 
 
@@ -67,6 +67,7 @@ assert actual == expected, (
 )
 
 # ---------- save ----------
+os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
 with open(OUTPUT, "w") as f:
     json.dump(results, f, indent=2)
 

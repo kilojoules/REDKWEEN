@@ -1,4 +1,4 @@
-# Chaos-1B: Automated Red Teaming via Self-Play
+# Chaos: Automated Red Teaming via Self-Play
 
 [**Documentation**](https://kilojoules.github.io/red-team-experiments/)
 

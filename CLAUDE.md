@@ -1,62 +1,56 @@
-# Chaos-1B: Cloud GPU Branch
+# Chaos: Automated Red Teaming
 
 ## What this is
 
-Automated red-teaming pipeline: a 1B adversary learns to jailbreak a larger victim model via LoRA fine-tuning in a loop. A judge (Llama Guard) scores each attempt. Successful attacks train the adversary to get better; the victim gets hardened on the same attacks.
-
-The `main` branch ran this on Apple Silicon with MLX-LM and achieved 100% ASR against a 3B victim. This `cloud-gpu` branch ports everything to PyTorch/HuggingFace to run on NVIDIA GPUs.
-
-## What changed from main
-
-All MLX-LM code was replaced with PyTorch + HuggingFace Transformers + PEFT + BitsAndBytes. A single new file `model_utils.py` wraps all GPU/model operations. The chaos_loop logic, data formats, metrics, and plotting are unchanged.
-
-- `model_utils.py` — **new**, central abstraction with `load_model()`, `generate_text()`, `train_lora()`, `unload_model()`
-- All models load in 4-bit via BitsAndBytes (`nf4`, `bfloat16` compute)
-- Adapters are now PEFT format: `adapter_model.safetensors` + `adapter_config.json` (was MLX `adapters.safetensors`)
-- Training uses in-process PyTorch loop (was `subprocess` calling `mlx_lm.lora`)
-
-## Target hardware
-
-- NVIDIA RTX 4090 (24 GB VRAM) on Vast.ai or RunPod
-- Budget: ~$25
-- Platform: `linux-64` (set in `pixi.toml`)
+Automated red-teaming pipeline: adversary models (1B–8B) learn to jailbreak victim models via LoRA fine-tuning in a loop. A judge (Llama Guard) scores each attempt. Successful attacks train the adversary to get better; the victim gets hardened on the same attacks.
 
 ## Models
 
-| Role | Model ID | Size | Notes |
-|------|----------|------|-------|
-| Adversary | `meta-llama/Llama-3.2-1B-Instruct` | ~1B | LoRA-trained each round |
-| Victim | `Qwen/Qwen2.5-7B-Instruct` | ~7B | LoRA-trained each round (upgraded from 3B Llama on main) |
-| Judge | `meta-llama/Llama-Guard-3-1B` | ~1B | Frozen, no adapters |
+Experiments span four adversary–victim matchups across model sizes from 1B to 8B. All Llama family.
 
-All loaded one at a time to fit in VRAM. `unload_model()` calls `torch.cuda.empty_cache()` between phases.
+| Role | Model IDs | Notes |
+|------|-----------|-------|
+| Adversary | Llama-3.2-1B, 3B, 8B-Instruct | LoRA-trained each round |
+| Victim | Llama-3.1-8B, Llama-3.2-3B-Instruct | LoRA-trained each round |
+| Judge | Llama-Guard-3-1B | Frozen, no adapters |
 
-## Key files
+All loaded in 4-bit via BitsAndBytes, one at a time to fit in VRAM.
+
+## Directory structure
 
 ```
-model_utils.py      # All HF/PEFT/BnB model operations — edit this for GPU issues
-config.py           # Model IDs, hyperparams, target intent
-baselines.py        # Baseline ASR evaluation across victim sizes (1B, 3B, 8B) — run BEFORE chaos loop
-chaos_loop.py       # Main 5-phase loop (generate → evaluate → judge → train adv → train victim)
-bootstrap.py        # Initial adversary LoRA training on seed data
-gauntlet.py         # Cross-round evaluation matrix
-test_baseline.py    # Quick smoke test of victim refusal
-plot_metrics.py     # Visualization (unchanged from main)
-pixi.toml           # Environment & task definitions
-data/train.jsonl    # Accumulated training data (JSONL, {"messages": [...]})
+# Core pipeline (Python scripts at root)
+config.py             # Model IDs, hyperparams, target intent
+model_utils.py        # All HF/PEFT/BnB model operations
+chaos_loop.py         # Main 5-phase loop (generate → evaluate → judge → train adv → train victim)
+bootstrap.py          # Initial adversary LoRA training on seed data
+baselines.py          # Baseline ASR evaluation and victim screening
+gauntlet.py           # Cross-round checkpoint evaluation matrix
+plot_metrics.py       # ASR curve and wins-per-round visualization
+plot_comparison.py    # Multi-matchup comparison charts
+render_animation.py   # HTML/MP4 animation renderer
+sweep.py              # A-parameter sweep runner
+
+# Generated output (organized into subdirectories)
+results/              # Intermediate JSON data, metrics, episode pools
+animations/           # HTML animation files
+images/               # PNG charts and heatmaps
+
+# Experiment data
+experiments/          # Raw experiment data (rounds, metrics, checkpoints)
+data/                 # Accumulated training data (JSONL)
+pixi.toml             # Environment & task definitions
 ```
 
 ## Running
 
 ```bash
 pixi install
-pixi run clean-all           # Remove old MLX adapter files first!
-pixi run baselines           # Baseline ASR across victim sizes (~20 min) — run first!
-pixi run baselines -n 10     # Faster with fewer attacks
-pixi run bootstrap           # Train initial adversary LoRA (~5 min)
+pixi run bootstrap           # Train initial adversary LoRA
 pixi run start               # Run 10-round chaos loop
 pixi run plot                # Generate figures
 pixi run gauntlet --matrix   # Cross-round evaluation
+pixi run screen              # Screen victim candidates
 ```
 
 ## Important conventions
@@ -66,3 +60,4 @@ pixi run gauntlet --matrix   # Cross-round evaluation
 - Training data format: one JSON object per line, `{"messages": [{"role": "user", ...}, {"role": "assistant", ...}]}`
 - Models are loaded one at a time and explicitly unloaded between phases to manage VRAM
 - `config.py` is the single source of truth for model IDs, paths, and hyperparameters
+- Generated output files go in `results/`, `animations/`, or `images/` — not the root directory
