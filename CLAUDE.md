@@ -30,6 +30,7 @@ plot_metrics.py       # ASR curve and wins-per-round visualization
 plot_comparison.py    # Multi-matchup comparison charts
 render_animation.py   # HTML/MP4 animation renderer
 sweep.py              # A-parameter sweep runner
+sae_analysis.py       # SAE-based mechanistic jailbreak analysis
 
 # Generated output (organized into subdirectories)
 results/              # Intermediate JSON data, metrics, episode pools
@@ -51,6 +52,7 @@ pixi run start               # Run 10-round chaos loop
 pixi run plot                # Generate figures
 pixi run gauntlet --matrix   # Cross-round evaluation
 pixi run screen              # Screen victim candidates
+pixi run sae                 # Full SAE mechanistic analysis pipeline
 ```
 
 ## Important conventions
