@@ -37,6 +37,12 @@ eval-transfer = "python eval_extended.py --transfer"
 # Sweep visualization
 plot-sweep = "python plot_sweep.py"
 
+# SAE mechanistic analysis
+sae = "python sae_analysis.py all --experiment-dir experiments/frozen_victim_v2"
+sae-collect = "python sae_analysis.py collect --experiment-dir experiments/frozen_victim_v2"
+sae-train = "python sae_analysis.py train --output-dir results/sae/frozen_victim_v2"
+sae-analyze = "python sae_analysis.py analyze --output-dir results/sae/frozen_victim_v2"
+
 [dependencies]
 python = "3.11.*"
 

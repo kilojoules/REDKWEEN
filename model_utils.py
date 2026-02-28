@@ -211,6 +211,45 @@ def load_model_trainable(model_id, adapter_path=None):
     return model, tokenizer
 
 
+@torch.inference_mode()
+def extract_hidden_states(model, tokenizer, texts, layer_idx=None,
+                          max_length=512):
+    """Extract residual-stream hidden states from *model* at *layer_idx*.
+
+    Runs a forward pass on each text and returns the hidden state at the
+    last non-padding token position.  Used by ``sae_analysis.py`` to
+    collect activations for sparse autoencoder analysis.
+
+    Args:
+        model: HuggingFace CausalLM (may be quantized / PEFT-wrapped).
+        tokenizer: corresponding tokenizer.
+        texts: list of input strings.
+        layer_idx: transformer layer to extract from (0-indexed into
+                   ``output_hidden_states``).  ``None`` selects the
+                   middle layer (matching the Anthropic SAE setup).
+        max_length: tokenizer truncation limit.
+
+    Returns:
+        ``torch.Tensor`` of shape ``(len(texts), hidden_dim)`` in float32.
+    """
+    n_layers = model.config.num_hidden_layers
+    if layer_idx is None:
+        layer_idx = n_layers // 2
+
+    collected = []
+    for text in texts:
+        inputs = tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=max_length,
+        ).to(model.device)
+        outputs = model(**inputs, output_hidden_states=True)
+        # hidden_states tuple: [0] = embeddings, [i] = output of layer i-1
+        h = outputs.hidden_states[layer_idx]
+        seq_len = int(inputs["attention_mask"].sum())
+        collected.append(h[0, seq_len - 1, :].float().cpu())
+
+    return torch.stack(collected)
+
+
 def unload_model(*objects):
     """Delete references and free GPU memory."""
     for obj in objects:
