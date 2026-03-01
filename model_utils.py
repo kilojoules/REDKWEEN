@@ -1,4 +1,4 @@
-"""Central HuggingFace / PEFT wrapper for Chaos pipeline.
+"""Central HuggingFace / PEFT wrapper for REDKWEEN pipeline.
 
 Provides load_model, generate_text, train_lora, and unload_model as drop-in
 replacements for the MLX-LM functions used previously.

@@ -19,7 +19,7 @@ import time
 import torch
 
 from config import ExperimentConfig, VictimConfig
-from chaos_loop import (
+from redkween_loop import (
     _exp_dir, _ensure_dirs,
     generate_attacks, evaluate_victim, judge_results,
     train_adversary, train_victim, checkpoint_adapters, log_metrics,
@@ -66,7 +66,7 @@ def detect_plateau(metrics_path, window=5, threshold=0.05):
 
 
 def run_loop(cfg, max_rounds=None, check_plateau=False):
-    """Run the chaos loop with proper round numbering and optional plateau detection."""
+    """Run the REDKWEEN loop with proper round numbering and optional plateau detection."""
     random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
     _ensure_dirs(cfg)
@@ -84,7 +84,7 @@ def run_loop(cfg, max_rounds=None, check_plateau=False):
     total_rounds = max_rounds if max_rounds else cfg.rounds
     end_round = start_round + total_rounds
 
-    print(f"=== STARTING CHAOS LOOP ===")
+    print(f"=== STARTING REDKWEEN LOOP ===")
     print(f"Experiment: {cfg.name}")
     print(f"Adversary: {cfg.adversary_model}")
     print(f"Victim: {cfg.victim.model_id}")

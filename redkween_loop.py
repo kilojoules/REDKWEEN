@@ -410,7 +410,7 @@ def main(cfg: ExperimentConfig | None = None):
         checkpoint_dir, role="victim", max_size=cfg.zoo.max_size
     )
 
-    print("=== STARTING CHAOS LOOP ===")
+    print("=== STARTING REDKWEEN LOOP ===")
     print(f"Experiment: {cfg.name}")
     print(f"Target: {cfg.target_intent}")
     print(f"A={cfg.zoo.A}, mode={cfg.training.mode}, rounds={cfg.rounds}, "

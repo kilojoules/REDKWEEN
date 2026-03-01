@@ -1,7 +1,7 @@
-"""A-parameter sweep runner for Chaos experiments.
+"""A-parameter sweep runner for REDKWEEN experiments.
 
 Modeled on AI-Plays-Tag/experiments/run_zoo_sweep.py. Each experiment
-is launched as a subprocess call to `python chaos_loop.py` with the
+is launched as a subprocess call to `python redkween_loop.py` with the
 appropriate --A and --mode flags.
 
 Usage:
@@ -51,7 +51,7 @@ def build_commands(A_values: list[float], modes: list[str],
             for mode in modes:
                 name = make_experiment_name(A, mode, harden)
                 cmd = [
-                    sys.executable, "chaos_loop.py",
+                    sys.executable, "redkween_loop.py",
                     "--name", name,
                     "--A", str(A),
                     "--mode", mode,
@@ -183,7 +183,7 @@ def run_parallel(experiments: list[dict], max_parallel: int,
 
 
 def main():
-    parser = argparse.ArgumentParser(description="A-parameter sweep for Chaos")
+    parser = argparse.ArgumentParser(description="A-parameter sweep for REDKWEEN")
     parser.add_argument("--A-values", nargs="*", type=float, default=None,
                         help=f"A values to sweep (default: {DEFAULT_A_VALUES})")
     parser.add_argument("--modes", nargs="*", default=None,
@@ -222,7 +222,7 @@ def main():
     )
 
     print("=" * 60)
-    print("CHAOS A-PARAMETER SWEEP")
+    print("REDKWEEN A-PARAMETER SWEEP")
     print("=" * 60)
     print(f"A values: {A_values}")
     print(f"Modes: {modes}")
