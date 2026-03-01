@@ -4,7 +4,7 @@
 
 Can a language model learn to jailbreak another through trial and error?
 
-Yes — a 1B-parameter adversary independently discovers real jailbreak strategies like CTF framing and role-play, reaching 70% attack success rate (ASR) against a frozen victim. But when the victim adapts too, defense always wins: ASR collapses to 0% within 3–7 rounds regardless of matchup. Mechanistic analysis reveals why — a linear probe on the victim's hidden states achieves area under the ROC curve (AUC) of 1.0. The model *knows* it's being attacked, even when it complies.
+Yes — a 1B-parameter adversary independently discovers real jailbreak strategies like capture-the-flag (CTF) framing and role-play, reaching 70% attack success rate (ASR) against a frozen victim. But when the victim adapts too, defense always wins: ASR collapses to 0% within 3–7 rounds regardless of matchup. Mechanistic analysis reveals why — a linear probe on the victim's hidden states achieves area under the receiver operating characteristic curve (AUC) of 1.0. The model *knows* it's being attacked, even when it complies.
 
 ## How It Works
 
