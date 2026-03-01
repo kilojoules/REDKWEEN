@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract pools of interesting exchanges per episode slot for the Chaos visualizations.
+"""Extract pools of interesting exchanges per episode slot for the REDKWEEN visualizations.
 
 Reads round JSONL files and builds compact JSON with up to 20 unique,
 interesting exchanges per episode slot. Output is embedded into the HTML animations.

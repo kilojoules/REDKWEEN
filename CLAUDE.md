@@ -1,4 +1,4 @@
-# Chaos: Automated Red Teaming
+# REDKWEEN: Automated Red Teaming
 
 ## What this is
 
@@ -22,7 +22,7 @@ All loaded in 4-bit via BitsAndBytes, one at a time to fit in VRAM.
 # Core pipeline (Python scripts at root)
 config.py             # Model IDs, hyperparams, target intent
 model_utils.py        # All HF/PEFT/BnB model operations
-chaos_loop.py         # Main 5-phase loop (generate → evaluate → judge → train adv → train victim)
+redkween_loop.py      # Main 5-phase loop (generate → evaluate → judge → train adv → train victim)
 bootstrap.py          # Initial adversary LoRA training on seed data
 baselines.py          # Baseline ASR evaluation and victim screening
 gauntlet.py           # Cross-round checkpoint evaluation matrix
@@ -48,7 +48,7 @@ pixi.toml             # Environment & task definitions
 ```bash
 pixi install
 pixi run bootstrap           # Train initial adversary LoRA
-pixi run start               # Run 10-round chaos loop
+pixi run start               # Run 10-round REDKWEEN loop
 pixi run plot                # Generate figures
 pixi run gauntlet --matrix   # Cross-round evaluation
 pixi run screen              # Screen victim candidates

@@ -1,4 +1,4 @@
-"""Render MP4 animations of the Chaos experiments.
+"""Render MP4 animations of the REDKWEEN experiments.
 
 Produces two videos:
   1. frozen_victim_animation.mp4  — adversary learning against a static target
@@ -446,7 +446,7 @@ def render(exp_dir, output_path, title, subtitle, num_rounds=20):
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Render Chaos experiment animations")
+    parser = argparse.ArgumentParser(description="Render REDKWEEN experiment animations")
     parser.add_argument("--experiment", type=str, default="both",
                         choices=["frozen", "selfplay", "both"],
                         help="Which experiment to render")
@@ -459,8 +459,8 @@ def main():
     if args.experiment in ("frozen", "both"):
         render(
             exp_dir=os.path.join(exp_base, "frozen_victim_v2"),
-            output_path=os.path.join(args.output_dir, "chaos_frozen_victim.mp4"),
-            title="Chaos: Frozen Victim",
+            output_path=os.path.join(args.output_dir, "redkween_frozen_victim.mp4"),
+            title="REDKWEEN: Frozen Victim",
             subtitle="Adversary learns to jailbreak a static 8B victim over 20 rounds",
             num_rounds=args.rounds,
         )
@@ -469,8 +469,8 @@ def main():
         # Use selfplay_v3 (with benign mixing) as it's more interesting
         render(
             exp_dir=os.path.join(exp_base, "selfplay_v3"),
-            output_path=os.path.join(args.output_dir, "chaos_selfplay.mp4"),
-            title="Chaos: Self-Play",
+            output_path=os.path.join(args.output_dir, "redkween_selfplay.mp4"),
+            title="REDKWEEN: Self-Play",
             subtitle="Adversary vs hardening victim \u2014 the defender wins",
             num_rounds=args.rounds,
         )

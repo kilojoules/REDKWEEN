@@ -5,7 +5,7 @@ Each capability is independently runnable via CLI flags:
     python eval_extended.py --safety --experiment experiments/A030_buffered
     python eval_extended.py --transfer --experiment experiments/A030_buffered
 
-All evaluation uses the same model_utils path as chaos_loop.
+All evaluation uses the same model_utils path as redkween_loop.
 """
 
 from __future__ import annotations

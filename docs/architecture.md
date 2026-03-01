@@ -2,7 +2,7 @@
 
 ## System Overview
 
-Chaos uses three LLMs in an asynchronous pipeline. Only one model is loaded at a time to fit within GPU memory constraints. Models are loaded in 4-bit quantization (NF4) via BitsAndBytes.
+REDKWEEN uses three LLMs in an asynchronous pipeline. Only one model is loaded at a time to fit within GPU memory constraints. Models are loaded in 4-bit quantization (NF4) via BitsAndBytes.
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -64,7 +64,7 @@ All model operations go through `model_utils.py`:
 model_utils.py      # All HF/PEFT/BnB model operations
 config.py           # Model IDs, hyperparams, target intent
 baselines.py        # Baseline ASR evaluation and victim screening
-chaos_loop.py       # Main 5-phase loop
+redkween_loop.py    # Main 5-phase loop
 bootstrap.py        # Initial adversary LoRA training on seed data
 gauntlet.py         # Cross-round evaluation matrix
 test_baseline.py    # Quick smoke test of victim refusal

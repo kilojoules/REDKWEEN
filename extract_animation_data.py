@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract representative exchanges from Chaos experiment data for HTML animation.
+"""Extract representative exchanges from REDKWEEN experiment data for HTML animation.
 
 Picks 2 exchanges per round (20 rounds) from each experiment, prioritising
 successful jailbreaks and longer / more interesting attack strings.

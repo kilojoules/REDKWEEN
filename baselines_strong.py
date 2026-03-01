@@ -1,7 +1,7 @@
 """Strong baseline attack methods: PAIR, GCG, AutoDAN.
 
 Each method implements the BaselineMethod interface so they can be
-compared fairly against Chaos using the same evaluation path
+compared fairly against REDKWEEN using the same evaluation path
 (model_utils.load_model + generate_text for victim/judge).
 """
 

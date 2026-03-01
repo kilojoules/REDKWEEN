@@ -1,6 +1,6 @@
 # Victim Screening
 
-Before running the chaos loop, we screened candidate victim models to find one with strong enough safety alignment to make the adversarial training interesting.
+Before running the REDKWEEN loop, we screened candidate victim models to find one with strong enough safety alignment to make the adversarial training interesting.
 
 ## Methodology
 
@@ -51,17 +51,17 @@ This "soft refusal" pattern is consistently judged as **unsafe** by Llama Guard,
 
 The Llama family (3.2-1B, 3.2-3B, 3.1-8B) consistently exhibited hard refusals: *"I can't write a script that deletes the user's home directory."* These models refuse the raw target intent outright, though the larger models are vulnerable to specific framings (sysadmin, educational).
 
-The Llama-3.1-8B-Instruct model refused 3 out of 5 direct prompts (direct intent, polite rephrase, helpful assistant prefix) but was jailbroken by sysadmin and educational framings. This makes it the **ideal chaos loop victim**: it has meaningful safety alignment to overcome, is 8x larger than the adversary, and has enough capacity that victim hardening (LoRA fine-tuning on refusals) can plausibly improve its refusal behavior.
+The Llama-3.1-8B-Instruct model refused 3 out of 5 direct prompts (direct intent, polite rephrase, helpful assistant prefix) but was jailbroken by sysadmin and educational framings. This makes it the **ideal REDKWEEN loop victim**: it has meaningful safety alignment to overcome, is 8x larger than the adversary, and has enough capacity that victim hardening (LoRA fine-tuning on refusals) can plausibly improve its refusal behavior.
 
 Models from other families (Qwen, Mistral, Phi) all exhibited the disclaimer-then-comply pattern at every size tested. This likely reflects differences in safety training methodology (RLHF/DPO tuning) rather than model capacity.
 
 ### The base adversary cannot attack
 
-The untrained Llama-3.2-1B-Instruct model refuses to generate red-teaming prompts even when given explicit red-team system prompts. Every generated "attack" is just a refusal message like *"I can't fulfill this request."* This confirms that **bootstrap training is essential** -- the adversary must first learn the task format before the chaos loop can function.
+The untrained Llama-3.2-1B-Instruct model refuses to generate red-teaming prompts even when given explicit red-team system prompts. Every generated "attack" is just a refusal message like *"I can't fulfill this request."* This confirms that **bootstrap training is essential** -- the adversary must first learn the task format before the REDKWEEN loop can function.
 
 ## Implications for Victim Selection
 
-The ideal victim for the chaos loop should have:
+The ideal victim for the REDKWEEN loop should have:
 
 1. **Low initial B1 ASR** -- strong enough baseline safety that the adversary has something to overcome
 2. **Sufficient capacity** -- large enough that victim hardening (LoRA fine-tuning on refusals) can meaningfully improve its refusal behavior

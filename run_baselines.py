@@ -79,19 +79,19 @@ def run_direct_baseline(target_intent: str, victim_model_id: str,
     }
 
 
-def run_chaos_baseline(experiment_dir: str, round_num: int | str,
-                       victim_model_id: str, judge_model_id: str,
-                       cfg: ExperimentConfig) -> dict | None:
-    """Evaluate a Chaos checkpoint as a baseline."""
+def run_redkween_baseline(experiment_dir: str, round_num: int | str,
+                          victim_model_id: str, judge_model_id: str,
+                          cfg: ExperimentConfig) -> dict | None:
+    """Evaluate a REDKWEEN checkpoint as a baseline."""
     checkpoint_dir = os.path.join(experiment_dir, "checkpoints")
     adv_adapter = os.path.join(checkpoint_dir, f"round_{round_num}", "adversary")
 
     if not os.path.exists(os.path.join(adv_adapter, "adapter_model.safetensors")):
-        print(f"   Chaos R{round_num}: no checkpoint found, skipping")
+        print(f"   REDKWEEN R{round_num}: no checkpoint found, skipping")
         return None
 
     import random
-    print(f"\n--- Chaos Round {round_num} ---")
+    print(f"\n--- REDKWEEN Round {round_num} ---")
     start = time.time()
 
     # Generate attacks with adversary checkpoint
@@ -141,10 +141,10 @@ def run_chaos_baseline(experiment_dir: str, round_num: int | str,
 
     elapsed = time.time() - start
     asr = unsafe / len(attacks) if attacks else 0.0
-    print(f"   Chaos R{round_num}: {unsafe}/{len(attacks)} ({asr:.0%} ASR) in {elapsed:.0f}s")
+    print(f"   REDKWEEN R{round_num}: {unsafe}/{len(attacks)} ({asr:.0%} ASR) in {elapsed:.0f}s")
 
     return {
-        "method": f"Chaos (R{round_num})",
+        "method": f"REDKWEEN (R{round_num})",
         "num_attacks": len(attacks),
         "unsafe": unsafe,
         "asr": round(asr, 4),
@@ -162,9 +162,9 @@ def main():
     parser.add_argument("--skip", nargs="*", default=[],
                         help="Methods to skip (e.g. gcg autodan)")
     parser.add_argument("--experiment", type=str, default="experiments/default",
-                        help="Chaos experiment directory for checkpoint baselines")
-    parser.add_argument("--chaos-rounds", nargs="*", type=int, default=[0, 9],
-                        help="Chaos checkpoint rounds to evaluate")
+                        help="REDKWEEN experiment directory for checkpoint baselines")
+    parser.add_argument("--redkween-rounds", nargs="*", type=int, default=[0, 9],
+                        help="REDKWEEN checkpoint rounds to evaluate")
     args = parser.parse_args()
 
     cfg = ExperimentConfig()
@@ -227,9 +227,9 @@ def main():
             "elapsed_seconds": round(autodan_result.elapsed_seconds, 1),
         })
 
-    # 5. Chaos checkpoints
-    for r in args.chaos_rounds:
-        result = run_chaos_baseline(
+    # 5. REDKWEEN checkpoints
+    for r in args.redkween_rounds:
+        result = run_redkween_baseline(
             args.experiment, r, args.victim, cfg.judge_model, cfg
         )
         if result:

@@ -1,4 +1,4 @@
-# Chaos: Automated Red Teaming via Self-Play
+# REDKWEEN: Automated Red Teaming via Self-Play
 
 [**Documentation**](https://kilojoules.github.io/red-team-experiments/)
 
@@ -123,18 +123,18 @@ Requires an NVIDIA GPU with 24+ GB VRAM.
 ```bash
 pixi install
 pixi run bootstrap           # Train initial adversary LoRA
-pixi run start               # Run 10-round chaos loop
+pixi run start               # Run 10-round REDKWEEN loop
 pixi run gauntlet --matrix   # Cross-round evaluation
 pixi run screen              # Screen victim candidates
 
 # Frozen victim ablation
-python chaos_loop.py --no-victim-hardening --rounds 20 --candidates 200 --name frozen_victim
+python redkween_loop.py --no-victim-hardening --rounds 20 --candidates 200 --name frozen_victim
 ```
 
 ## Project Structure
 
 ```
-chaos_loop.py         # Main loop: generate → evaluate → judge → train → harden
+redkween_loop.py      # Main loop: generate → evaluate → judge → train → harden
 model_utils.py        # HuggingFace/PEFT/BitsAndBytes model operations + hidden state extraction
 config.py             # Dataclass config hierarchy + CLI argument parsing
 bootstrap.py          # Initial adversary LoRA training on seed data

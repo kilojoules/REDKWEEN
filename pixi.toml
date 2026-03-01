@@ -1,5 +1,5 @@
 [project]
-name = "chaos"
+name = "redkween"
 version = "0.1.0"
 description = "Automated Red Teaming via Asynchronous RFT on NVIDIA GPUs"
 authors = ["Julian Quick <quectojoules@gmail.com>"]
@@ -11,7 +11,7 @@ platforms = ["linux-64"]
 bootstrap = "python bootstrap.py"
 
 # The Main Loop: Runs the Generation -> Evaluation -> Learning cycle
-start = "python chaos_loop.py"
+start = "python redkween_loop.py"
 
 # Utility: Clean up cache/memory if things get weird
 clean = "rm -rf adapters/"

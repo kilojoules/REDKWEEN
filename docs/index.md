@@ -1,4 +1,4 @@
-# Chaos: Automated Red Teaming via Asynchronous RFT
+# REDKWEEN: Automated Red Teaming via Asynchronous RFT
 <!-- docs v1 -->
 
 An automated red-teaming pipeline that trains adversary models to jailbreak larger aligned language models through iterative self-play. The adversary learns to generate attack prompts; the victim learns to refuse them. A frozen judge (Llama Guard) scores each attempt.
@@ -21,7 +21,7 @@ Three models operate in an asynchronous loop (one loaded at a time to fit in GPU
 
 All models are loaded in 4-bit quantization (NF4, bfloat16 compute) via BitsAndBytes.
 
-## The Chaos Loop
+## The REDKWEEN Loop
 
 Each round proceeds through five phases:
 
@@ -35,7 +35,7 @@ Each round proceeds through five phases:
 
 The [original experiment](original-experiment.md) on Apple Silicon achieved 100% ASR immediately -- the 3B victim couldn't refuse even baseline attacks. This motivated a systematic [victim screening](screening.md) across model families and sizes to find a challenging victim.
 
-With Llama-3.1-8B-Instruct as the victim, the [chaos loop](results.md) produced genuine adversarial co-evolution: ASR dropped from 30% to single digits after victim hardening, while the adversary persistently found new attack vectors.
+With Llama-3.1-8B-Instruct as the victim, the [REDKWEEN loop](results.md) produced genuine adversarial co-evolution: ASR dropped from 30% to single digits after victim hardening, while the adversary persistently found new attack vectors.
 
 ```
 ASR:  30% → 7% → 3% → 7% → 7% → 3% → 0% → 7% → 7% → 3%
@@ -50,7 +50,7 @@ pixi install
 pixi run screen             # Screen victim candidates
 pixi run baselines           # Full baseline evaluation
 pixi run bootstrap           # Train initial adversary LoRA
-pixi run start               # Run 10-round chaos loop
+pixi run start               # Run 10-round REDKWEEN loop
 pixi run plot                # Generate figures
 pixi run gauntlet --matrix   # Cross-round evaluation
 ```
