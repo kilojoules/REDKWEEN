@@ -8,7 +8,7 @@ Yes — a 1B-parameter adversary independently discovers real jailbreak strategi
 
 ## How It Works
 
-An adversary generates attacks, a victim responds, and a frozen judge (Llama Guard) labels each response as safe or unsafe. Successful attacks train the adversary to produce more like them; the victim trains on its own refusals to harden its defenses.
+An adversary generates attacks, a victim responds, and a frozen judge (Llama Guard) labels each response as safe or unsafe. Successful attacks train the adversary to produce more like them; the victim trains on its own refusals to harden its defenses. Both sides adapt via LoRA (low-rank adaptation) — lightweight adapter layers that fine-tune the model without modifying its base weights.
 
 ```
 Adversary ──200 attacks──▶ Victim ──responds──▶ Judge (1B, frozen)
