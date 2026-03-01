@@ -82,7 +82,7 @@ The collapse speed scales with the victim's capacity advantage: the 3B victim (f
 
 ## Under the Hood: The Victim Knows
 
-If the victim always loses to a hardened defense, what's happening internally when it *does* comply with an attack? We trained a sparse autoencoder on the 3B victim's middle-layer hidden states across all 40 frozen-victim rounds (1,200 attack/response pairs, 440 unsafe) to find out.
+If the victim always loses to a hardened defense, what's happening internally when it *does* comply with an attack? We trained a sparse autoencoder (SAE) on the 3B victim's middle-layer hidden states across all 40 frozen-victim rounds (1,200 attack/response pairs, 440 unsafe) to find out.
 
 | Metric | Value |
 |--------|-------|
