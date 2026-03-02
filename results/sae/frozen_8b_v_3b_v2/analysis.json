@@ -15,7 +15,7 @@
     "final_mse": 96.48641204833984,
     "final_l1": 35.20571517944336
   },
-  "linear_probe_auc": 1.0,
+  "linear_probe_auc": 0.8367,
   "top_jailbreak_features": [
     {
       "feature_id": 5926,
