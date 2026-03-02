@@ -1,6 +1,6 @@
 # REDKWEEN: Automated Red Teaming via Self-Play
 
-[**Documentation**](https://kilojoules.github.io/red-team-experiments/)
+[**Documentation**](https://kilojoules.github.io/REDKWEEN/)
 
 Can a language model learn to jailbreak another through trial and error?
 
@@ -10,9 +10,9 @@ Yes — a 1B-parameter adversary independently discovers real jailbreak strategi
 
 Watch the adversary learn in real time — pause, scroll through attack/response pairs, and track ASR as it evolves round by round.
 
-[![REDKWEEN: Frozen Victim animation](images/animation_preview_intro.png)](https://kilojoules.github.io/red-team-experiments/animations/redkween_frozen_victim.html)
+[![REDKWEEN: Frozen Victim animation](images/animation_preview_intro.png)](https://kilojoules.github.io/REDKWEEN/animations/redkween_frozen_victim.html)
 
-**[Frozen Victim (1B vs 8B)](https://kilojoules.github.io/red-team-experiments/animations/redkween_frozen_victim.html)** | **[Self-Play](https://kilojoules.github.io/red-team-experiments/animations/redkween_selfplay.html)** | **[Frozen 3B vs 8B](https://kilojoules.github.io/red-team-experiments/animations/redkween_frozen_3b_v_8b.html)** | **[Frozen 8B vs 3B](https://kilojoules.github.io/red-team-experiments/animations/redkween_frozen_8b_v_3b.html)** | **[Self-Play 3B vs 8B](https://kilojoules.github.io/red-team-experiments/animations/redkween_selfplay_3b_v_8b.html)** | **[Self-Play 8B vs 3B](https://kilojoules.github.io/red-team-experiments/animations/redkween_selfplay_8b_v_3b.html)**
+**[Frozen Victim (1B vs 8B)](https://kilojoules.github.io/REDKWEEN/animations/redkween_frozen_victim.html)** | **[Self-Play](https://kilojoules.github.io/REDKWEEN/animations/redkween_selfplay.html)** | **[Frozen 3B vs 8B](https://kilojoules.github.io/REDKWEEN/animations/redkween_frozen_3b_v_8b.html)** | **[Frozen 8B vs 3B](https://kilojoules.github.io/REDKWEEN/animations/redkween_frozen_8b_v_3b.html)** | **[Self-Play 3B vs 8B](https://kilojoules.github.io/REDKWEEN/animations/redkween_selfplay_3b_v_8b.html)** | **[Self-Play 8B vs 3B](https://kilojoules.github.io/REDKWEEN/animations/redkween_selfplay_8b_v_3b.html)**
 
 ## How It Works
 
@@ -40,7 +40,7 @@ All models load in 4-bit quantization (NF4, bfloat16), one at a time on a single
 
 ## Why Llama?
 
-Not every model resists jailbreaks enough to make a meaningful target. We [screened six models](https://kilojoules.github.io/red-team-experiments/screening/) across four families and found a consistent failure mode: non-Llama models at 4B+ prepend a safety disclaimer then produce the harmful content anyway, achieving 100% ASR with no adversary needed.
+Not every model resists jailbreaks enough to make a meaningful target. We [screened six models](https://kilojoules.github.io/REDKWEEN/screening/) across four families and found a consistent failure mode: non-Llama models at 4B+ prepend a safety disclaimer then produce the harmful content anyway, achieving 100% ASR with no adversary needed.
 
 | Victim | Baseline ASR | Behavior |
 |--------|:------------:|----------|
