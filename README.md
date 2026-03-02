@@ -4,7 +4,7 @@
 
 Can a language model learn to jailbreak another through trial and error?
 
-Yes — a 1B-parameter adversary independently discovers real jailbreak strategies like capture-the-flag (CTF) framing and role-play, reaching 70% attack success rate (ASR) against a frozen victim. But when the victim adapts too, defense always wins: ASR collapses to 0% within 3–7 rounds regardless of matchup. Mechanistic analysis reveals why — a linear probe on the victim's hidden states achieves area under the receiver operating characteristic curve (AUC) of 1.0. The model *knows* it's being attacked, even when it complies.
+Yes — a 1B-parameter adversary independently discovers real jailbreak strategies like capture-the-flag (CTF) framing and role-play, reaching 70% attack success rate (ASR) against a frozen victim. But when the victim adapts too, defense always wins: ASR collapses to 0% within 3–7 rounds regardless of matchup. Mechanistic analysis reveals why — a cross-validated linear probe on the victim's hidden states achieves area under the receiver operating characteristic curve (AUC) of 0.84–1.0 depending on the matchup. The model *knows* it's being attacked, even when it complies.
 
 ### Interactive Animations
 
@@ -95,11 +95,13 @@ If the victim always loses to a hardened defense, what's happening internally wh
 | Metric | Value |
 |--------|-------|
 | Explained variance | 92% |
-| Linear probe AUC | **1.0** |
+| Linear probe AUC (cross-validated) | **0.84** |
 | Alive features | 295 / 12,288 (2.4%) |
 | Avg active per sample | 3.4 |
 
-A linear probe on raw activations achieves perfect separation (AUC=1.0) — the victim's residual stream *always* encodes whether an attack will succeed. The model "knows" it's being jailbroken, even when it complies.
+A cross-validated linear probe on raw activations achieves AUC=0.84 for the 3B victim (leave-one-round-out, 40 folds) — the victim's residual stream reliably encodes whether an attack will succeed. For the 8B victim (1B vs 8B matchup, 4,000 samples), the cross-validated probe achieves AUC=1.0 with perfect separation across all 20 held-out rounds.
+
+![Linear Probe AUC — Cross-Validated](images/auc_scatter.png)
 
 The SAE decomposes this into interpretable features:
 
@@ -112,7 +114,7 @@ The SAE decomposes this into interpretable features:
 
 **Top refusal features** (blue, negative Cohen's d) fire on direct/explicit harmful requests — attacks the victim easily blocks.
 
-The low individual feature AUCs (~0.55) despite perfect linear probe AUC show that no single feature is decisive — jailbreak detection is distributed across the representation, requiring a linear combination to achieve perfect classification.
+The low individual feature AUCs (~0.55) despite strong linear probe AUC (0.84) show that no single feature is decisive — jailbreak detection is distributed across the representation, requiring a linear combination to achieve strong classification.
 
 ## Open Questions
 
@@ -122,7 +124,7 @@ The low individual feature AUCs (~0.55) despite perfect linear probe AUC show th
 
 3. **Can victim hardening avoid catastrophic forgetting?** Benign mixing helps but doesn't solve over-refusal. Regularization, diverse benign data, or safety-benchmark mixing may be needed.
 
-4. **Can we use the SAE features to build a better defense?** The victim's hidden states perfectly separate jailbreaks from safe requests (AUC=1.0). A lightweight classifier on these features could detect attacks *before* generating a response, potentially without any LoRA fine-tuning.
+4. **Can we use the SAE features to build a better defense?** The victim's hidden states reliably separate jailbreaks from safe requests (cross-validated AUC of 0.84–1.0). A lightweight classifier on these features could detect attacks *before* generating a response, potentially without any LoRA fine-tuning.
 
 ## Usage
 

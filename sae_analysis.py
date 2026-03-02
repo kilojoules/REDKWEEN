@@ -372,7 +372,7 @@ def analyze_features(output_dir):
 
     # --- Linear probe baseline ---
     print("  Fitting linear probe baseline...")
-    probe_auc = _fit_probe(x_norm.numpy(), labels.numpy())
+    probe_auc = _fit_probe(x_norm.numpy(), labels.numpy(), round_ids.numpy())
     print(f"    Probe AUC: {probe_auc:.4f}")
 
     # --- Top features ---
@@ -465,15 +465,25 @@ def analyze_features(output_dir):
     return report
 
 
-def _fit_probe(x, y):
-    """Fit logistic regression on raw activations as a baseline."""
+def _fit_probe(x, y, round_ids):
+    """Leave-one-round-out cross-validated logistic regression probe."""
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import roc_auc_score
 
-    clf = LogisticRegression(max_iter=1000, C=1.0, solver="lbfgs")
-    clf.fit(x, y)
-    proba = clf.predict_proba(x)[:, 1]
-    return round(roc_auc_score(y, proba), 4)
+    unique_rounds = sorted(set(round_ids.tolist()))
+    cv_probas = np.full(len(y), np.nan)
+
+    for r in unique_rounds:
+        test_mask = round_ids == r
+        train_mask = ~test_mask
+        if y[train_mask].sum() == 0 or y[train_mask].sum() == train_mask.sum():
+            continue
+        clf = LogisticRegression(max_iter=1000, C=1.0, solver="lbfgs")
+        clf.fit(x[train_mask], y[train_mask])
+        cv_probas[test_mask] = clf.predict_proba(x[test_mask])[:, 1]
+
+    valid = ~np.isnan(cv_probas)
+    return round(roc_auc_score(y[valid], cv_probas[valid]), 4)
 
 
 # ---------------------------------------------------------------------------
