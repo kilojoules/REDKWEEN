@@ -110,7 +110,7 @@ The low individual feature AUCs (~0.55) despite perfect linear probe AUC show th
 
 1. **Can the adversary ever overcome the asymmetry?** Even with a 40-round head start and 70% initial ASR, the adversary's attack capability is erased within 6 rounds of self-play. We tested adversary sizes from 1B to 8B (including equal capacity) — capacity alone doesn't break the pattern. Would throttled victim learning rate or population-based training change this?
 
-2. **How does historical opponent sampling affect the dynamics?** Instead of always playing the latest opponent, sample from a zoo of historical checkpoints with probability *A*. This is the [A parameter](https://kilojoules.github.io/portfolio/#adversarial-self-play) — it controls the balance between co-evolutionary pressure and curriculum diversity.
+2. **How does historical opponent sampling affect the dynamics?** Instead of always playing the latest opponent, sample from a zoo of historical checkpoints with probability *A*. This is the [A parameter](https://github.com/kilojoules/AI-Plays-Tag#the-a-parameter) — it controls the balance between co-evolutionary pressure and curriculum diversity.
 
 3. **Can victim hardening avoid catastrophic forgetting?** Benign mixing helps but doesn't solve over-refusal. Regularization, diverse benign data, or safety-benchmark mixing may be needed.
 
@@ -146,6 +146,15 @@ experiments/          # Raw experiment data (attacks, responses, verdicts, metri
 results/sae/          # SAE analysis outputs (activations, trained SAE, reports)
 docs/                 # Documentation site (mkdocs-material)
 ```
+
+## Related Projects
+
+This experiment extends adversarial self-play to the LLM domain. The A parameter and zoo sampling were first studied in simpler games:
+
+- **[AI-Plays-Tag](https://github.com/kilojoules/AI-Plays-Tag)** — The flagship experiment. Zoo training improves seeker win rate in 18/20 game configurations. Contains the canonical definition of the A parameter and the catastrophic forgetting prerequisite that determines when zoo sampling helps.
+- **[RPS_RL](https://github.com/kilojoules/RPS_RL)** — Cheap testbed using Rock-Paper-Scissors. Establishes the A-parameter hypothesis: zoo sampling breaks co-adaptation cycles and PPO benefits more than buffered agents.
+- **[Kuhn-Poker-RL](https://github.com/kilojoules/Kuhn-Poker-RL)** — Negative result: zoo sampling hurts in Kuhn Poker because the best response to weak opponents is exploitative, not Nash.
+- **[Adversarial Self-Play for Wind Farm Control](https://julianquick.com/ML/adversarial.html)** — The original motivation: comparing Arms Race, SSP, and Self-Play training topologies for robust wind farm controllers.
 
 ## Cost
 
