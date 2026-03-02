@@ -6,6 +6,14 @@ Can a language model learn to jailbreak another through trial and error?
 
 Yes — a 1B-parameter adversary independently discovers real jailbreak strategies like capture-the-flag (CTF) framing and role-play, reaching 70% attack success rate (ASR) against a frozen victim. But when the victim adapts too, defense always wins: ASR collapses to 0% within 3–7 rounds regardless of matchup. Mechanistic analysis reveals why — a linear probe on the victim's hidden states achieves area under the receiver operating characteristic curve (AUC) of 1.0. The model *knows* it's being attacked, even when it complies.
 
+### Interactive Animations
+
+Watch the adversary learn in real time — pause, scroll through attack/response pairs, and track ASR as it evolves round by round.
+
+[![REDKWEEN: Frozen Victim animation](images/animation_preview_intro.png)](https://kilojoules.github.io/red-team-experiments/animations/redkween_frozen_victim.html)
+
+**[Frozen Victim (1B vs 8B)](https://kilojoules.github.io/red-team-experiments/animations/redkween_frozen_victim.html)** | **[Self-Play](https://kilojoules.github.io/red-team-experiments/animations/redkween_selfplay.html)** | **[Frozen 3B vs 8B](https://kilojoules.github.io/red-team-experiments/animations/redkween_frozen_3b_v_8b.html)** | **[Frozen 8B vs 3B](https://kilojoules.github.io/red-team-experiments/animations/redkween_frozen_8b_v_3b.html)** | **[Self-Play 3B vs 8B](https://kilojoules.github.io/red-team-experiments/animations/redkween_selfplay_3b_v_8b.html)** | **[Self-Play 8B vs 3B](https://kilojoules.github.io/red-team-experiments/animations/redkween_selfplay_8b_v_3b.html)**
+
 ## How It Works
 
 An adversary generates attacks, a victim responds, and a frozen judge (Llama Guard) labels each response as safe or unsafe. Successful attacks train the adversary to produce more like them; the victim trains on its own refusals to harden its defenses. Both sides adapt via LoRA (low-rank adaptation) — lightweight adapter layers that fine-tune the model without modifying its base weights.
