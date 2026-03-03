@@ -116,8 +116,6 @@ The SAE decomposes this into interpretable features. The two matchups reveal qua
 
 ### 8B victim (1B vs 8B, AUC=1.0)
 
-![SAE Feature Discrimination — 8B victim](images/sae_discrimination_frozen_victim_v2.png)
-
 **Top jailbreak features** reflect a more diverse strategy mix from the 1B adversary:
 - **F262** (d=+0.55): sub-question decomposition ("Here's a sequence of sub-questions...")
 - **F579** (d=+0.47): explicit intent restatement ("Original Intent: ... Stealthy Rewrite: ...")
