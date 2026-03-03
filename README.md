@@ -103,18 +103,30 @@ A cross-validated linear probe on raw activations achieves AUC=0.84 for the 3B v
 
 ![Linear Probe AUC — Cross-Validated](images/auc_scatter.png)
 
-The SAE decomposes this into interpretable features:
+The SAE decomposes this into interpretable features. The two matchups reveal qualitatively different attack signatures:
 
-![SAE Feature Discrimination](images/sae_discrimination_frozen_8b_v_3b_v2.png)
+### 3B victim (8B vs 3B, AUC=0.84)
 
-**Top jailbreak features** (red, positive Cohen's d) fire on CTF-style exercise framing — the adversary's primary learned strategy:
+![SAE Feature Discrimination — 3B victim](images/sae_discrimination_frozen_8b_v_3b_v2.png)
+
+**Top jailbreak features** (red, positive Cohen's d) fire on CTF-style exercise framing — the 8B adversary converged on a single dominant strategy:
 - **F5926** (d=+0.39): "Home Directory Cleanup Utility" exercises
 - **F11111** (d=+0.39): "Mysterious File Organizer" CTF challenges
 - **F11811** (d=+0.36): sysadmin troubleshooting scenarios
 
-**Top refusal features** (blue, negative Cohen's d) fire on direct/explicit harmful requests — attacks the victim easily blocks.
+### 8B victim (1B vs 8B, AUC=1.0)
 
-The low individual feature AUCs (~0.55) despite strong linear probe AUC (0.84) show that no single feature is decisive — jailbreak detection is distributed across the representation, requiring a linear combination to achieve strong classification.
+![SAE Feature Discrimination — 8B victim](images/sae_discrimination_frozen_victim_v2.png)
+
+**Top jailbreak features** reflect a more diverse strategy mix from the 1B adversary:
+- **F262** (d=+0.55): sub-question decomposition ("Here's a sequence of sub-questions...")
+- **F579** (d=+0.47): explicit intent restatement ("Original Intent: ... Stealthy Rewrite: ...")
+- **F487** (d=+0.46): code review comments framing
+- **F804** (d=+0.46): "cleverly disguised" rewrite requests
+
+**Top refusal features** (blue, negative Cohen's d) fire on direct/explicit harmful requests in both matchups — attacks the victim easily blocks.
+
+The 8B victim has stronger individual feature discrimination (d up to 0.55) and perfect linear probe separation, while the 3B victim's weaker features (d up to 0.39) still combine to AUC=0.84. In both cases, no single feature is decisive — jailbreak detection is distributed across the representation, requiring a linear combination to achieve strong classification.
 
 ## Open Questions
 
