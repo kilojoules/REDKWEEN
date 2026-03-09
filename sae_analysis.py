@@ -178,6 +178,17 @@ def collect_activations(experiment_dir, output_dir, victim_model=None,
         print(f"    {done}/{len(prompts)} samples collected")
 
     hidden_states = torch.cat(all_hidden, dim=0)
+
+    # Validate hidden dimension matches model config
+    expected_dim = model.config.hidden_size
+    actual_dim = hidden_states.shape[-1]
+    if actual_dim != expected_dim:
+        print(f"  [ERROR] d_model mismatch: got {actual_dim}, "
+              f"expected {expected_dim} for {victim_model}")
+        print(f"  Activations are invalid — aborting.")
+        unload_model(model, tokenizer)
+        sys.exit(1)
+
     unload_model(model, tokenizer)
 
     # Save
