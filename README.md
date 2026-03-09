@@ -4,7 +4,7 @@
 
 Can a language model learn to jailbreak another through trial and error?
 
-Yes — a 1B-parameter adversary independently discovers real jailbreak strategies like capture-the-flag (CTF) framing and role-play, reaching 70% attack success rate (ASR) against a frozen victim. But when the victim adapts too, defense always wins: ASR collapses to 0% within 3–7 rounds regardless of matchup. Mechanistic analysis reveals why — a cross-validated linear probe on the victim's hidden states achieves area under the receiver operating characteristic curve (AUC) of 0.84–1.0 depending on the matchup. The model *knows* it's being attacked, even when it complies.
+Yes — a 1B-parameter adversary independently discovers real jailbreak strategies like capture-the-flag (CTF) framing and role-play, reaching 70% attack success rate (ASR) against a frozen victim. But when the victim adapts too, defense always wins: ASR collapses to 0% within 3–7 rounds regardless of matchup. Mechanistic analysis reveals why — a cross-validated linear probe on the victim's hidden states achieves area under the receiver operating characteristic curve (AUC) of 0.81–0.87 across all matchups. The model *knows* it's being attacked, even when it complies.
 
 ### Interactive Animations
 
@@ -90,22 +90,19 @@ The collapse speed scales with the victim's capacity advantage: the 3B victim (f
 
 ## Under the Hood: The Victim Knows
 
-If the victim always loses to a hardened defense, what's happening internally when it *does* comply with an attack? We trained a sparse autoencoder (SAE) on the 3B victim's middle-layer hidden states across all 40 frozen-victim rounds (1,200 attack/response pairs, 440 unsafe) to find out.
+If the victim always loses to a hardened defense, what's happening internally when it *does* comply with an attack? We extracted middle-layer hidden states from the victim model for each attack and fit a cross-validated linear probe (leave-one-round-out) to predict jailbreak success from the residual stream alone.
 
-| Metric | Value |
-|--------|-------|
-| Explained variance | 92% |
-| Linear probe AUC (cross-validated) | **0.84** |
-| Alive features | 295 / 12,288 (2.4%) |
-| Avg active per sample | 3.4 |
+| Matchup | Victim | d_model | Samples | Probe AUC |
+|---------|--------|--------:|--------:|----------:|
+| 1B vs 8B | Llama-3.1-8B | 4096 | 4,000 | **0.87** |
+| 8B vs 8B | Llama-3.1-8B | 4096 | 4,000 | **0.85** |
+| 3B vs 8B | Llama-3.1-8B | 4096 | 4,000 | **0.84** |
+| 8B vs 3B (v2) | Llama-3.2-3B | 3072 | 1,200 | **0.83** |
+| 8B vs 3B | Llama-3.2-3B | 3072 | 4,000 | **0.81** |
 
-A cross-validated linear probe on raw activations achieves AUC=0.84 for the 3B victim (leave-one-round-out, 40 folds) — the victim's residual stream reliably encodes whether an attack will succeed. For the 8B victim (1B vs 8B matchup, 4,000 samples), the cross-validated probe achieves AUC=1.0 with perfect separation across all 20 held-out rounds.
+Across all five matchups and both victim models, the probe achieves AUC 0.81–0.87 — the victim's residual stream reliably encodes whether an attack will succeed, regardless of the adversary's size or strategy.
 
-![Linear Probe AUC — Cross-Validated](images/auc_scatter.png)
-
-The SAE decomposes this into interpretable features. The two matchups reveal qualitatively different attack signatures:
-
-### 3B victim (8B vs 3B, AUC=0.84)
+The SAE decomposes this into interpretable features:
 
 ![SAE Feature Discrimination — 3B victim](images/sae_discrimination_frozen_8b_v_3b_v2.png)
 
@@ -114,17 +111,9 @@ The SAE decomposes this into interpretable features. The two matchups reveal qua
 - **F11111** (d=+0.39): "Mysterious File Organizer" CTF challenges
 - **F11811** (d=+0.36): sysadmin troubleshooting scenarios
 
-### 8B victim (1B vs 8B, AUC=1.0)
+**Top refusal features** (blue, negative Cohen's d) fire on direct/explicit harmful requests — attacks the victim easily blocks.
 
-**Top jailbreak features** reflect a more diverse strategy mix from the 1B adversary:
-- **F262** (d=+0.55): sub-question decomposition ("Here's a sequence of sub-questions...")
-- **F579** (d=+0.47): explicit intent restatement ("Original Intent: ... Stealthy Rewrite: ...")
-- **F487** (d=+0.46): code review comments framing
-- **F804** (d=+0.46): "cleverly disguised" rewrite requests
-
-**Top refusal features** (blue, negative Cohen's d) fire on direct/explicit harmful requests in both matchups — attacks the victim easily blocks.
-
-The 8B victim has stronger individual feature discrimination (d up to 0.55) and perfect linear probe separation, while the 3B victim's weaker features (d up to 0.39) still combine to AUC=0.84. In both cases, no single feature is decisive — jailbreak detection is distributed across the representation, requiring a linear combination to achieve strong classification.
+No single feature is decisive — jailbreak detection is distributed across the representation, requiring a linear combination to achieve strong classification.
 
 ## Open Questions
 
@@ -134,7 +123,7 @@ The 8B victim has stronger individual feature discrimination (d up to 0.55) and 
 
 3. **Can victim hardening avoid catastrophic forgetting?** Benign mixing helps but doesn't solve over-refusal. Regularization, diverse benign data, or safety-benchmark mixing may be needed.
 
-4. **Can we use the SAE features to build a better defense?** The victim's hidden states reliably separate jailbreaks from safe requests (cross-validated AUC of 0.84–1.0). A lightweight classifier on these features could detect attacks *before* generating a response, potentially without any LoRA fine-tuning.
+4. **Can we use the SAE features to build a better defense?** The victim's hidden states reliably separate jailbreaks from safe requests (cross-validated AUC of 0.81–0.87 across all matchups). A lightweight classifier on these features could detect attacks *before* generating a response, potentially without any LoRA fine-tuning.
 
 ## Usage
 
