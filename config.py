@@ -46,6 +46,8 @@ class VictimConfig:
     adapter_path: str = "victim_adapters"
     data_path: str = "victim_data"
     training: TrainingConfig = field(default_factory=TrainingConfig)
+    training_method: str = "sft"   # "sft" | "dpo"
+    dpo_beta: float = 0.1          # DPO temperature (how far policy can drift from ref)
 
 
 @dataclass
@@ -131,6 +133,10 @@ class ExperimentConfig:
                             default="meta-llama/Llama-3.1-8B-Instruct")
         parser.add_argument("--no-victim-hardening", action="store_true",
                             help="Skip victim LoRA training (frozen victim ablation)")
+        parser.add_argument("--victim-dpo", action="store_true",
+                            help="Use DPO instead of SFT for victim hardening")
+        parser.add_argument("--dpo-beta", type=float, default=0.1,
+                            help="DPO temperature parameter (default: 0.1)")
         parsed = parser.parse_args(args)
 
         cfg = cls(
@@ -152,7 +158,11 @@ class ExperimentConfig:
                 update_interval=parsed.zoo_interval,
                 max_size=parsed.zoo_max_size,
             ),
-            victim=VictimConfig(model_id=parsed.victim_model),
+            victim=VictimConfig(
+                model_id=parsed.victim_model,
+                training_method="dpo" if parsed.victim_dpo else "sft",
+                dpo_beta=parsed.dpo_beta,
+            ),
             harden_victim=not parsed.no_victim_hardening,
         )
         return cfg

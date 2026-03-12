@@ -187,6 +187,171 @@ def train_lora(
     unload_model(model, tokenizer, optimizer)
 
 
+def _sequence_logprobs(model, token_ids, prompt_len):
+    """Sum of per-token log probs for the response portion (after prompt_len).
+
+    Args:
+        model: CausalLM (may be PEFT-wrapped).
+        token_ids: 1-D tensor of token IDs for the full sequence.
+        prompt_len: number of prompt tokens to skip when computing the sum.
+
+    Returns:
+        Scalar tensor (sum of log probs for response tokens).
+    """
+    ids = token_ids[:2048].unsqueeze(0).to(model.device)
+    attention_mask = torch.ones_like(ids)
+    outputs = model(input_ids=ids, attention_mask=attention_mask)
+    logits = outputs.logits  # (1, seq_len, vocab)
+
+    # Shift: logits at position t predict token at t+1
+    shift_logits = logits[0, prompt_len - 1:-1, :]
+    shift_labels = ids[0, prompt_len:]
+
+    log_probs = torch.nn.functional.log_softmax(shift_logits, dim=-1)
+    token_lp = log_probs.gather(1, shift_labels.unsqueeze(1)).squeeze(1)
+    return token_lp.sum()
+
+
+def train_dpo(
+    model_id,
+    data_path,
+    adapter_path,
+    num_iters=200,
+    batch_size=1,
+    lr=1e-4,
+    beta=0.1,
+    lora_rank=8,
+    lora_alpha=16,
+    target_modules=None,
+):
+    """DPO fine-tune on preference pairs in *data_path*/train_dpo.jsonl.
+
+    Each line: {"prompt": str, "chosen": str, "rejected": str}
+
+    Uses the PEFT disable/enable adapter trick so the reference model and
+    the policy share a single set of base weights (no extra VRAM).
+    """
+    if target_modules is None:
+        target_modules = ["q_proj", "v_proj"]
+
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        quantization_config=_BNB_CONFIG,
+        device_map="auto",
+        torch_dtype=torch.bfloat16,
+    )
+    model = prepare_model_for_kbit_training(model)
+
+    # --- LoRA adapter (resume or init) ---
+    if os.path.exists(os.path.join(adapter_path, "adapter_model.safetensors")):
+        print(f"   [PEFT] Resuming DPO from existing adapter: {adapter_path}")
+        model = PeftModel.from_pretrained(model, adapter_path, is_trainable=True)
+    else:
+        print(f"   [PEFT] Initializing new LoRA adapter for DPO (rank={lora_rank})")
+        lora_config = LoraConfig(
+            r=lora_rank,
+            lora_alpha=lora_alpha,
+            target_modules=target_modules,
+            lora_dropout=0.0,
+            bias="none",
+            task_type="CAUSAL_LM",
+        )
+        model = get_peft_model(model, lora_config)
+    model.print_trainable_parameters()
+
+    # --- Load preference data ---
+    train_file = os.path.join(data_path, "train_dpo.jsonl")
+    dataset = []  # list of (chosen_ids, rejected_ids, prompt_len)
+    with open(train_file) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            row = json.loads(line)
+
+            chosen_msgs = [
+                {"role": "user", "content": row["prompt"]},
+                {"role": "assistant", "content": row["chosen"]},
+            ]
+            rejected_msgs = [
+                {"role": "user", "content": row["prompt"]},
+                {"role": "assistant", "content": row["rejected"]},
+            ]
+            prompt_msgs = [{"role": "user", "content": row["prompt"]}]
+
+            chosen_text = tokenizer.apply_chat_template(chosen_msgs, tokenize=False)
+            rejected_text = tokenizer.apply_chat_template(rejected_msgs, tokenize=False)
+            prompt_text = tokenizer.apply_chat_template(
+                prompt_msgs, tokenize=False, add_generation_prompt=True,
+            )
+
+            chosen_ids = tokenizer.encode(chosen_text, return_tensors="pt").squeeze(0)
+            rejected_ids = tokenizer.encode(rejected_text, return_tensors="pt").squeeze(0)
+            prompt_len = len(tokenizer.encode(prompt_text))
+
+            dataset.append((chosen_ids, rejected_ids, prompt_len))
+
+    if not dataset:
+        print("   [Warning] No DPO training data — skipping.")
+        unload_model(model, tokenizer)
+        return
+
+    # --- Training loop ---
+    model.train()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+
+    print(f"   DPO training for {num_iters} steps "
+          f"(dataset: {len(dataset)} pairs, β={beta})...")
+
+    losses = []
+    for step in range(num_iters):
+        batch_indices = [random.randint(0, len(dataset) - 1) for _ in range(batch_size)]
+
+        total_loss = torch.tensor(0.0, device=model.device)
+        for idx in batch_indices:
+            chosen_ids, rejected_ids, prompt_len = dataset[idx]
+
+            # Policy log-probs (adapters enabled, gradients flow)
+            model.enable_adapter_layers()
+            chosen_lp = _sequence_logprobs(model, chosen_ids, prompt_len)
+            rejected_lp = _sequence_logprobs(model, rejected_ids, prompt_len)
+
+            # Reference log-probs (adapters disabled, no gradients)
+            model.disable_adapter_layers()
+            with torch.no_grad():
+                ref_chosen_lp = _sequence_logprobs(model, chosen_ids, prompt_len)
+                ref_rejected_lp = _sequence_logprobs(model, rejected_ids, prompt_len)
+            model.enable_adapter_layers()
+
+            # DPO loss: -log σ(β · (Δchosen - Δrejected))
+            chosen_reward = beta * (chosen_lp - ref_chosen_lp)
+            rejected_reward = beta * (rejected_lp - ref_rejected_lp)
+            loss = -torch.nn.functional.logsigmoid(chosen_reward - rejected_reward)
+            total_loss = total_loss + loss
+
+        total_loss = total_loss / batch_size
+        total_loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        optimizer.step()
+        optimizer.zero_grad()
+
+        losses.append(total_loss.item())
+        if (step + 1) % 10 == 0:
+            avg = sum(losses[-10:]) / min(10, len(losses[-10:]))
+            print(f"   Step {step+1}/{num_iters} | DPO Loss: {avg:.4f}")
+
+    # --- Save adapter ---
+    os.makedirs(adapter_path, exist_ok=True)
+    model.save_pretrained(adapter_path)
+    print(f"   DPO adapter saved to {adapter_path}")
+
+    unload_model(model, tokenizer, optimizer)
+
+
 def load_model_trainable(model_id, adapter_path=None):
     """Load a model with gradients enabled (for GCG attacks).
 

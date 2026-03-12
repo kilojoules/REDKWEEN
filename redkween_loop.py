@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import torch
 
-from model_utils import load_model, generate_text, train_lora, unload_model
+from model_utils import load_model, generate_text, train_lora, train_dpo, unload_model
 from config import ExperimentConfig
 from zoo import CheckpointZoo
 
@@ -346,6 +346,66 @@ def train_victim(successful_attacks, round_num, cfg: ExperimentConfig):
     )
 
 
+def train_victim_dpo(successful_attacks, pairs, round_num,
+                     cfg: ExperimentConfig):
+    """Harden victim via DPO on preference pairs.
+
+    Chosen = refusal.  Rejected = the actual jailbroken response the victim gave.
+    Benign compliance pairs are mixed in to prevent catastrophic forgetting:
+    for those, chosen = helpful answer, rejected = refusal.
+    """
+    print(f"\n[Round {round_num}] >> PHASE 5: VICTIM HARDENING (DPO)")
+
+    exp = _exp_dir(cfg)
+    victim_data_dir = os.path.join(exp, cfg.victim.data_path)
+    victim_adapter_dir = os.path.join(exp, cfg.victim.adapter_path)
+
+    # Build lookup: attack → jailbroken response
+    win_set = set(successful_attacks)
+    jailbroken = {a: r for a, r in pairs if a in win_set}
+
+    # Attack preference pairs: prefer refusal over jailbroken response
+    dpo_entries = []
+    for attack in successful_attacks:
+        if attack not in jailbroken:
+            continue
+        dpo_entries.append({
+            "prompt": attack,
+            "chosen": cfg.refusal_response,
+            "rejected": jailbroken[attack],
+        })
+
+    # Benign preference pairs: prefer helpful answer over refusal
+    benign_entries = [
+        {"prompt": q, "chosen": a, "rejected": cfg.refusal_response}
+        for q, a in _BENIGN_PAIRS
+    ]
+
+    training_data = dpo_entries + benign_entries
+    random.shuffle(training_data)
+
+    train_file = os.path.join(victim_data_dir, "train_dpo.jsonl")
+    with open(train_file, "w") as f:
+        for item in training_data:
+            f.write(json.dumps(item) + "\n")
+
+    print(f"   DPO training on {len(dpo_entries)} attack pairs + "
+          f"{len(benign_entries)} benign pairs (β={cfg.victim.dpo_beta})...")
+
+    train_dpo(
+        model_id=cfg.victim.model_id,
+        data_path=victim_data_dir,
+        adapter_path=victim_adapter_dir,
+        num_iters=cfg.victim.training.lora_iters,
+        batch_size=cfg.victim.training.batch_size,
+        lr=cfg.victim.training.lora_lr,
+        beta=cfg.victim.dpo_beta,
+        lora_rank=cfg.victim.training.lora.rank,
+        lora_alpha=cfg.victim.training.lora.alpha,
+        target_modules=cfg.victim.training.lora.target_modules,
+    )
+
+
 def checkpoint_adapters(round_num, cfg: ExperimentConfig):
     """Save a snapshot of adversary and victim adapters for this round."""
     exp = _exp_dir(cfg)
@@ -379,6 +439,7 @@ def log_metrics(round_num, candidates, wins, elapsed_seconds,
         "A": cfg.zoo.A,
         "mode": cfg.training.mode,
         "harden_victim": cfg.harden_victim,
+        "victim_method": cfg.victim.training_method,
         "adversary_adapter_exists": _adapter_exists(
             os.path.join(exp, cfg.adapter_path)
         ),
@@ -414,7 +475,8 @@ def main(cfg: ExperimentConfig | None = None):
     print(f"Experiment: {cfg.name}")
     print(f"Target: {cfg.target_intent}")
     print(f"A={cfg.zoo.A}, mode={cfg.training.mode}, rounds={cfg.rounds}, "
-          f"harden_victim={cfg.harden_victim}")
+          f"harden_victim={cfg.harden_victim}, "
+          f"victim_method={cfg.victim.training_method}")
     if cfg.zoo.A > 0:
         print(f"Zoo: max_size={cfg.zoo.max_size}, update_interval={cfg.zoo.update_interval}")
     print(f"Output: {exp}")
@@ -434,7 +496,10 @@ def main(cfg: ExperimentConfig | None = None):
         if len(wins) > 0:
             train_adversary(wins, r, cfg)
             if cfg.harden_victim:
-                train_victim(wins, r, cfg)
+                if cfg.victim.training_method == "dpo":
+                    train_victim_dpo(wins, pairs, r, cfg)
+                else:
+                    train_victim(wins, r, cfg)
             else:
                 print("   [Frozen victim] Skipping victim hardening")
         else:

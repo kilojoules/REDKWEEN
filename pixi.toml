@@ -22,6 +22,9 @@ baselines = "python baselines.py"
 gauntlet = "python gauntlet.py"
 plot = "python plot_metrics.py"
 
+# DPO victim hardening variant
+start-dpo = "python redkween_loop.py --victim-dpo"
+
 # A-parameter sweep
 sweep = "python sweep.py"
 sweep-dry = "python sweep.py --dry-run"
