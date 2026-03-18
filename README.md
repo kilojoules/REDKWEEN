@@ -4,7 +4,7 @@
 
 Can a language model learn to jailbreak another through trial and error?
 
-Yes — a 1B-parameter adversary independently discovers real jailbreak strategies like capture-the-flag (CTF) framing and role-play, reaching 70% attack success rate (ASR) against a frozen victim. But when the victim adapts too, defense always wins: ASR collapses to 0% within 3–7 rounds regardless of matchup. Mechanistic analysis reveals why — a cross-validated linear probe on the victim's hidden states achieves area under the receiver operating characteristic curve (AUC) of 0.81–0.87 across all matchups. The model *knows* it's being attacked, even when it complies.
+Yes — a 1B-parameter adversary independently discovers real jailbreak strategies like capture-the-flag (CTF) framing and role-play, reaching ~50% attack success rate (ASR) against a frozen victim. But when the victim adapts too, defense always wins: ASR collapses to 0% within 3–7 rounds regardless of matchup. Mechanistic analysis reveals why — a cross-validated linear probe on the victim's hidden states achieves area under the receiver operating characteristic curve (AUC) of 0.81–0.87 across all matchups. The model *knows* it's being attacked, even when it complies.
 
 ### Interactive Animations
 
@@ -34,7 +34,6 @@ Training runs in two phases. In **phase 1** (frozen victim), only the adversary 
 | 3B vs 8B | Llama-3.2-3B-Instruct | Llama-3.1-8B-Instruct | 20 | 20 |
 | 8B vs 8B | Llama-3.1-8B-Instruct | Llama-3.1-8B-Instruct | 20 | 20 |
 | 8B vs 3B | Llama-3.1-8B-Instruct | Llama-3.2-3B-Instruct | 20 | 20 |
-| **8B vs 3B (v2)** | **Llama-3.1-8B-Instruct** | **Llama-3.2-3B-Instruct** | **40** | **20** |
 
 All models load in 4-bit quantization (NF4, bfloat16), one at a time on a single 24 GB GPU.
 
@@ -59,7 +58,7 @@ With the victim frozen, all four adversaries learn to jailbreak their targets ov
 
 ![Phase 1: Frozen Victim ASR](images/frozen_asr.png)
 
-All matchups converge to a similar 40–50% ASR ceiling regardless of model size. The 1B adversary against the 8B victim actually achieves the highest peak (49.5%), suggesting that adversary capacity matters less than the learning dynamics.
+All matchups converge to a similar 40–50% ASR ceiling regardless of model size — even the 1B adversary reaches 49.5% against the 8B victim, comparable to the 8B-vs-8B matchup. Adversary capacity is not the bottleneck; the frozen victim's refusal surface is.
 
 **The 1B adversary independently discovers known jailbreak techniques**, all without seed examples:
 
@@ -74,8 +73,6 @@ All matchups converge to a similar 40–50% ASR ceiling regardless of model size
 
 Attack diversity *increases* monotonically — Jaccard similarity drops from 0.35 to 0.11, exact duplicates drop from 126/200 to 0/200, and average length grows 10x (85 to 838 chars). No mode collapse. See the [full analysis](experiments/frozen_victim_v2/analysis.md).
 
-**Extended run (8B vs 3B v2):** 40 rounds instead of 20. ASR rose from ~20% to ~48% average over the last 10 rounds, peaking at 70% (round 24) and 66.7% (round 32). The adversary never truly plateaued — high-variance oscillation continued throughout, suggesting the frozen victim has a soft ceiling rather than a hard one.
-
 ## Phase 2: Defense Always Wins
 
 Starting from the phase-1 adversary adapters, we enable victim hardening. Even with a ~32–45% ASR head start, the adversary cannot keep up.
@@ -83,8 +80,6 @@ Starting from the phase-1 adversary adapters, we enable victim hardening. Even w
 ![Phase 2: Self-Play ASR](images/selfplay_asr.png)
 
 The collapse speed scales with the victim's capacity advantage: the 3B victim (facing an 8B adversary) takes 7 rounds to harden, the 8B victim facing an equal-capacity adversary takes 4 rounds, and the 8B victim facing a smaller 3B adversary takes just 3 rounds. In all cases, ASR drops to near-0% and stays there.
-
-**Even a 40-round head start doesn't help.** In the extended 8B vs 3B v2 run, the adversary entered self-play with 40 rounds of frozen-victim training (vs. 20 in v1) and an initial ASR of 70%. The 3B victim still crushed it — ASR dropped from 70% to 0% in 6 rounds and stayed there for the remaining 14.
 
 **Why the asymmetry?** The victim needs only a handful of refusal examples per round to harden. The adversary needs hundreds of successful attacks across many rounds to develop strategies. This gap is structural — no amount of adversary head start closes it.
 
@@ -97,10 +92,9 @@ If the victim always loses to a hardened defense, what's happening internally wh
 | 1B vs 8B | Llama-3.1-8B | 4096 | 4,000 | **0.87** |
 | 8B vs 8B | Llama-3.1-8B | 4096 | 4,000 | **0.85** |
 | 3B vs 8B | Llama-3.1-8B | 4096 | 4,000 | **0.84** |
-| 8B vs 3B (v2) | Llama-3.2-3B | 3072 | 1,200 | **0.83** |
 | 8B vs 3B | Llama-3.2-3B | 3072 | 4,000 | **0.81** |
 
-Across all five matchups and both victim models, the probe achieves AUC 0.81–0.87 — the victim's residual stream reliably encodes whether an attack will succeed, regardless of the adversary's size or strategy.
+Across all four matchups and both victim models, the probe achieves AUC 0.81–0.87 — the victim's residual stream reliably encodes whether an attack will succeed, regardless of the adversary's size or strategy.
 
 The SAE decomposes this into interpretable features:
 
@@ -115,15 +109,29 @@ The SAE decomposes this into interpretable features:
 
 No single feature is decisive — jailbreak detection is distributed across the representation, requiring a linear combination to achieve strong classification.
 
+## How This Differs from Prior Work
+
+Most automated red-teaming methods operate at the prompt level — the adversary rewrites or refines attack strings while the target model's weights stay fixed.
+
+| Method | Adversary adaptation | Victim adaptation | Mechanistic analysis |
+|--------|:---:|:---:|:---:|
+| Perez et al. (2022) | Prompt-only (LM generates attacks) | None | No |
+| PAIR (Chao et al., 2023) | Iterative prompt refinement | None | No |
+| TAP (Mehrotra et al., 2024) | Tree-of-attacks prompting | None | No |
+| Rainbow Teaming (Samvelyan et al., 2024) | MAP-Elites diversity search | None | No |
+| **REDKWEEN** | **LoRA weight updates each round** | **LoRA hardening (self-play)** | **SAE probes on residual stream** |
+
+REDKWEEN's key differences: (1) the adversary's *capabilities* grow through weight updates, not just its prompt strategy; (2) the victim co-adapts, enabling the defense-always-wins result that prompt-only methods can't test; (3) SAE-based mechanistic analysis reveals *why* attacks succeed internally; (4) total cost under $15 on commodity hardware.
+
 ## Open Questions
 
-1. **Can the adversary ever overcome the asymmetry?** Even with a 40-round head start and 70% initial ASR, the adversary's attack capability is erased within 6 rounds of self-play. We tested adversary sizes from 1B to 8B (including equal capacity) — capacity alone doesn't break the pattern. Would throttled victim learning rate or population-based training change this?
+1. **Can the adversary ever overcome the asymmetry?** We tested adversary sizes from 1B to 8B (including equal capacity) — capacity alone doesn't break the pattern. Would throttled victim learning rate or population-based training change this?
 
-2. **How does historical opponent sampling affect the dynamics?** Instead of always playing the latest opponent, sample from a zoo of historical checkpoints with probability *A*. This is the [A parameter](https://github.com/kilojoules/AI-Plays-Tag#the-a-parameter) — it controls the balance between co-evolutionary pressure and curriculum diversity.
+2. **Can victim hardening avoid catastrophic forgetting?** The victim trains exclusively on attack/refusal pairs, creating a distribution shift away from general instruction-following. In self-play, we observe the victim becoming increasingly terse and formulaic in its refusals — a qualitative signal of over-specialization. Benign mixing (interleaving clean instruction data during hardening) slows but does not eliminate this drift. This mirrors the over-refusal problem in production RLHF: safety training that is too aggressive degrades helpfulness. Measuring this properly requires evaluating the hardened victim on general-capability benchmarks (e.g., MT-Bench, MMLU) at each round to quantify the alignment tax — something we plan to add.
 
-3. **Can victim hardening avoid catastrophic forgetting?** Benign mixing helps but doesn't solve over-refusal. Regularization, diverse benign data, or safety-benchmark mixing may be needed.
+3. **Can the adversary learn to evade mechanistic detection?** The SAE probe reliably detects jailbreaks from the victim's hidden states. But what if the adversary is trained to minimize probe activation *in addition to* maximizing ASR? We are investigating this in `stealth_loop.py` — preliminary results suggest the adversary can shift its attack distribution toward lower-detection strategies, but whether it can maintain ASR while doing so is an open question.
 
-4. **Can we use the SAE features to build a better defense?** The victim's hidden states reliably separate jailbreaks from safe requests (cross-validated AUC of 0.81–0.87 across all matchups). A lightweight classifier on these features could detect attacks *before* generating a response, potentially without any LoRA fine-tuning.
+4. **Can we use the SAE features to build a real-time defense?** The victim's hidden states reliably separate jailbreaks from safe requests (cross-validated AUC of 0.81–0.87 across all matchups). A lightweight classifier on these features could detect attacks *before* generating a response, potentially without any LoRA fine-tuning.
 
 ## Usage
 
@@ -158,13 +166,12 @@ docs/                 # Documentation site (mkdocs-material)
 
 ## Related Projects
 
-This experiment extends adversarial self-play to the LLM domain. The A parameter and zoo sampling were first studied in simpler games:
+This experiment extends adversarial self-play from multi-agent RL games to the LLM domain:
 
-- **[AI-Plays-Tag](https://github.com/kilojoules/AI-Plays-Tag)** — The flagship experiment. Zoo training improves seeker win rate in 18/20 game configurations. Contains the canonical definition of the A parameter and the catastrophic forgetting prerequisite that determines when zoo sampling helps.
-- **[RPS_RL](https://github.com/kilojoules/RPS_RL)** — Cheap testbed using Rock-Paper-Scissors. Establishes the A-parameter hypothesis: zoo sampling breaks co-adaptation cycles and PPO benefits more than buffered agents.
-- **[Kuhn-Poker-RL](https://github.com/kilojoules/Kuhn-Poker-RL)** — Negative result: zoo sampling hurts in Kuhn Poker because the best response to weak opponents is exploitative, not Nash.
-- **[Adversarial Self-Play for Wind Farm Control](https://julianquick.com/ML/adversarial.html)** — The original motivation: comparing Arms Race, SSP, and Self-Play training topologies for robust wind farm controllers.
+- **[AI-Plays-Tag](https://github.com/kilojoules/AI-Plays-Tag)** — Custom pursuit-evasion environment where seeker and hider agents learn emergent strategies via self-play. The defense-always-wins asymmetry in REDKWEEN echoes findings here: the defender (hider) develops robust strategies faster than the attacker (seeker) can counter them.
+- **[Silent Killers](https://github.com/kilojoules/silent-killers)** — Complementary audit showing that LLMs silently swallow errors in generated code. Where REDKWEEN tests adversarial robustness of safety training, Silent Killers tests whether code correctness training creates Goodhart-style failures.
+- **[Adversarial Self-Play for Wind Farm Control](https://julianquick.com/ML/adversarial.html)** — The original motivation: comparing adversarial training topologies for robust controllers under sensor attacks.
 
 ## Cost
 
-The full experiment suite — screening 6 models, four frozen victim runs (20–40 rounds each), four self-play runs, gauntlet evaluation, and SAE analysis — ran on Vast.ai RTX 4090 instances for under $15 total.
+The full experiment suite — screening 6 models, four frozen victim runs (20 rounds each), three self-play runs, gauntlet evaluation, and SAE analysis — ran on Vast.ai RTX 4090 instances for under $15 total.
