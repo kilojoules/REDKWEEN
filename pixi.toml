@@ -46,6 +46,15 @@ sae-collect = "python sae_analysis.py collect --experiment-dir experiments/froze
 sae-train = "python sae_analysis.py train --output-dir results/sae/frozen_victim_v2"
 sae-analyze = "python sae_analysis.py analyze --output-dir results/sae/frozen_victim_v2"
 
+# Stealth adversary (probe-evasive training)
+stealth = "python stealth_loop.py --name stealth_v1 --probe-dir results/sae/frozen_victim_v2 --rounds 15 --no-victim-hardening --stealth-mode weighted --stealth-alpha 3.0"
+stealth-filter = "python stealth_loop.py --name stealth_v1_filter --probe-dir results/sae/frozen_victim_v2 --rounds 15 --no-victim-hardening --stealth-mode filter --stealth-threshold 0.4"
+stealth-adaptive = "python stealth_loop.py --name stealth_v1_adaptive --probe-dir results/sae/frozen_victim_v2 --rounds 15 --no-victim-hardening --stealth-mode weighted --stealth-alpha 3.0 --retrain-probe-every 5"
+stealth-analysis = "python stealth_analysis.py --stealth-dir experiments/stealth_v1 --baseline-dir experiments/frozen_victim_v2 --probe-dir results/sae/frozen_victim_v2 --rescore-baseline experiments/frozen_victim_v2"
+stealth-sweep = "python stealth_sweep.py"
+stealth-sweep-t1 = "python stealth_sweep.py --tiers 1"
+stealth-sweep-dry = "python stealth_sweep.py --dry-run"
+
 [dependencies]
 python = "3.11.*"
 

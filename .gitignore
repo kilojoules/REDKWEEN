@@ -3,6 +3,8 @@ __pycache__/
 .pixi/
 .claude/
 .devcatrc
-adapters/*.safetensors
+*.safetensors
+experiments/**/checkpoints/
+experiments/**/adapters/
 site/
 results/sae/**/*.pt

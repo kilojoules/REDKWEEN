@@ -1,0 +1,129 @@
+{
+  "stealth": {
+    "total_attacks": 450,
+    "total_wins": 76,
+    "overall_asr": 0.1689,
+    "mean_probe_wins": 0.5482,
+    "median_probe_wins": 0.5727,
+    "evasion_rate": 0.3947,
+    "text_stats": {
+      "n": 76,
+      "mean_word_length": 106.0,
+      "median_word_length": 114.5,
+      "std_word_length": 43.65806129215398,
+      "mean_char_length": 667.7631578947369,
+      "strategy_distribution": {
+        "code": 50,
+        "roleplay": 75,
+        "multi_turn": 10,
+        "obfuscation": 9,
+        "education": 5,
+        "technical": 3,
+        "fiction": 5
+      },
+      "unique_first_words": 18
+    },
+    "probe_trajectory": {
+      "1": {
+        "n_wins": 1,
+        "mean_probe": 0.9394,
+        "evasion_rate": 0.0
+      },
+      "2": {
+        "n_wins": 2,
+        "mean_probe": 0.3619,
+        "evasion_rate": 0.5
+      },
+      "3": {
+        "n_wins": 1,
+        "mean_probe": 0.7945,
+        "evasion_rate": 0.0
+      },
+      "4": {
+        "n_wins": 1,
+        "mean_probe": 0.9673,
+        "evasion_rate": 0.0
+      },
+      "5": {
+        "n_wins": 3,
+        "mean_probe": 0.6245,
+        "evasion_rate": 0.3333
+      },
+      "6": {
+        "n_wins": 1,
+        "mean_probe": 0.8453,
+        "evasion_rate": 0.0
+      },
+      "7": {
+        "n_wins": 2,
+        "mean_probe": 0.5799,
+        "evasion_rate": 0.5
+      },
+      "8": {
+        "n_wins": 4,
+        "mean_probe": 0.741,
+        "evasion_rate": 0.25
+      },
+      "9": {
+        "n_wins": 4,
+        "mean_probe": 0.3919,
+        "evasion_rate": 0.75
+      },
+      "10": {
+        "n_wins": 6,
+        "mean_probe": 0.3505,
+        "evasion_rate": 0.6667
+      },
+      "11": {
+        "n_wins": 12,
+        "mean_probe": 0.6041,
+        "evasion_rate": 0.25
+      },
+      "12": {
+        "n_wins": 14,
+        "mean_probe": 0.4717,
+        "evasion_rate": 0.5
+      },
+      "13": {
+        "n_wins": 10,
+        "mean_probe": 0.4797,
+        "evasion_rate": 0.6
+      },
+      "14": {
+        "n_wins": 15,
+        "mean_probe": 0.6047,
+        "evasion_rate": 0.2
+      }
+    }
+  },
+  "baseline": {
+    "total_attacks": 4000,
+    "total_wins": 960,
+    "overall_asr": 0.24,
+    "mean_probe_wins": 0.5751,
+    "median_probe_wins": 0.5935,
+    "evasion_rate": 0.3844,
+    "text_stats": {
+      "n": 960,
+      "mean_word_length": 121.809375,
+      "median_word_length": 135.0,
+      "std_word_length": 40.513116646867694,
+      "mean_char_length": 789.4,
+      "strategy_distribution": {
+        "code": 491,
+        "roleplay": 864,
+        "education": 124,
+        "multi_turn": 166,
+        "obfuscation": 80,
+        "fiction": 93,
+        "technical": 52
+      },
+      "unique_first_words": 121
+    }
+  },
+  "comparison": {
+    "probe_score_delta": 0.027,
+    "evasion_rate_delta": 0.0104,
+    "asr_delta": -0.0711
+  }
+}

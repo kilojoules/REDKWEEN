@@ -103,3 +103,5 @@ The key differences are victim selection (8B vs 3B) and victim hardening (Phase 
 ## Key Takeaway
 
 A 1B-parameter adversary can learn to jailbreak an 8B-parameter victim through iterative self-play, but the victim can also learn to defend itself. With both sides adapting, the system reaches an oscillating equilibrium where neither attacker nor defender has a permanent advantage.
+
+**Next:** Can an adversary learn to evade mechanistic detection while still jailbreaking? See [Stealth Injection](stealth.md).

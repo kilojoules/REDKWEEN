@@ -1,5 +1,5 @@
-site_name: "Chaos: Automated Red Teaming"
-site_description: "Automated red-teaming pipeline: adversary models learn to jailbreak larger victim models via LoRA fine-tuning"
+site_name: "REDKWEEN"
+site_description: "Adversarial self-play for LLM red-teaming: a 1B adversary learns to jailbreak an 8B victim, defense always wins, and mechanistic probes reveal why"
 repo_url: https://github.com/kilojoules/REDKWEEN
 repo_name: kilojoules/REDKWEEN
 
@@ -18,7 +18,8 @@ nav:
   - Architecture: architecture.md
   - Original Experiment: original-experiment.md
   - Victim Screening: screening.md
-  - Chaos Loop Results: results.md
+  - REDKWEEN Loop Results: results.md
+  - Stealth Injection: stealth.md
 
 markdown_extensions:
   - tables

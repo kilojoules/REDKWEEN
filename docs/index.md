@@ -43,6 +43,8 @@ ASR:  30% → 7% → 3% → 7% → 7% → 3% → 0% → 7% → 7% → 3%
 
 A [10x10 gauntlet](results.md#gauntlet-cross-round-evaluation) pairing every adversary checkpoint against every victim checkpoint revealed a surprising finding: **victim hardening causes catastrophic forgetting**. The base victim (no hardening) was one of the strongest defenders, while the most-hardened victim was the weakest. LoRA fine-tuning on specific (attack, refusal) pairs [degrades the model's broader safety alignment](results.md#victim-hardening-causes-catastrophic-forgetting) even as it patches the targeted vulnerabilities.
 
+A [stealth injection experiment](stealth.md) tested whether the adversary can learn to evade an SAE-based detection probe while still jailbreaking. Against a static probe, evasion is fast -- detection probability dropped from 0.94 to 0.12 in 9 rounds. But retroactive rescoring shows the underlying jailbreak signal in the victim's residual stream is robust: an adaptive probe that retrains on stealth data recovers nearly all detection capability.
+
 ## Quick Start
 
 ```bash
@@ -52,5 +54,7 @@ pixi run baselines           # Full baseline evaluation
 pixi run bootstrap           # Train initial adversary LoRA
 pixi run start               # Run 10-round REDKWEEN loop
 pixi run plot                # Generate figures
-pixi run gauntlet --matrix   # Cross-round evaluation
+pixi run gauntlet            # Cross-round evaluation
+pixi run stealth             # Probe-evasive adversary training
+pixi run stealth-analysis    # Compare stealth vs naive attacks
 ```
